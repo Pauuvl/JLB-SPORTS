@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load jlb_filters %}
+
+{% block title %}Nueva Venta — JLB Sports{% endblock %}
+{% block topbar_title %}Registrar Venta{% endblock %}
+
+{% block extra_js %}
+<script>
+window.PRODUCTOS = [
+  {% for p in products %}
+  { id: {{ p.pk }}, nombre: "{{ p.name|escapejs }}", precio: {{ p.sale_price }}, stock: {{ p.stock_quantity }} }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+];
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="seccion-header">
+  <div>
+    <h1 class="seccion-titulo">Registrar Nueva Venta</h1>
+    <p class="seccion-subtitulo">El stock se descuenta automáticamente al confirmar</p>
+  </div>
+  <a href="{% url 'sale_list' %}" class="btn btn-outline">← Volver</a>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="venta-grid">
+
+    <!-- Izquierda: cliente y productos -->
+    <div>
+      <div class="tarjeta mb-2">
+        <div class="tarjeta-cab"><span class="tarjeta-titulo">👤 Cliente</span></div>
+        <div class="tarjeta-cuerpo">
+          <div class="form-grid">
+            <div class="form-grupo">
+              <label>Cliente (opcional)</label>
+              <select name="client" id="select-cliente" onchange="alCambiarCliente()">
+                <option value="" data-multiplicador="1">— Mostrador (sin descuento) —</option>
+                {% for c in clients %}
+                <option value="{{ c.pk }}" data-multiplicador="{{ c.price_multiplier }}">
+                  {{ c.name }} — {{ c.get_client_type_display }}{% if c.discount_percent %} ({{ c.discount_percent }}% desc.){% endif %}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-grupo">
+              <label>Observaciones</label>
+              <input type="text" name="notes" placeholder="Notas opcionales...">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tarjeta">
+        <div class="tarjeta-cab">
+          <span class="tarjeta-titulo">📦 Productos</span>
+          <button type="button" class="btn btn-outline btn-sm" onclick="agregarItem()">+ Agregar</button>
+        </div>
+        <div class="tarjeta-cuerpo">
+          {% if not products %}
+          <div class="alerta alerta-warning">⚠️ No hay productos con stock disponible.</div>
+          {% endif %}
+          <div id="items-lista" class="items-lista"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Derecha: resumen -->
+    <div class="venta-resumen">
+      <h3>📋 Resumen</h3>
+      <div class="resumen-linea">
+        <span class="td-muted">Artículos</span>
+        <span id="resumen-items" class="bold">0</span>
+      </div>
+      <div class="resumen-linea" style="margin-top:8px;padding-top:12px;border-top:2px solid var(--gris-borde);">
+        <span class="bold" style="font-size:0.9rem;">TOTAL</span>
+        <span class="resumen-total-valor" id="resumen-total">$0</span>
+      </div>
+
+      <button type="submit" class="btn btn-rojo btn-lg btn-bloque mt-2">
+        💳 Confirmar Venta
+      </button>
+      <a href="{% url 'sale_list' %}" class="btn btn-outline btn-bloque mt-1">Cancelar</a>
+
+      <div class="alerta alerta-warning mt-2" style="font-size:0.78rem;padding:9px 12px;">
+        ⚠️ El stock se descuenta de forma inmediata al confirmar.
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load jlb_filters %}
+{% block title %}Nuevo Pedido — JLB Sports{% endblock %}
+{% block topbar_title %}Nuevo Pedido{% endblock %}
+
+{% block extra_js %}
+<script>
+window.PRODUCTOS = [
+  {% for p in products %}
+  { id: {{ p.pk }}, nombre: "{{ p.name|escapejs }}", precio: {{ p.sale_price }}, stock: {{ p.stock_quantity }} }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+];
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="seccion-header">
+  <div>
+    <h1 class="seccion-titulo">Nuevo Pedido</h1>
+    <p class="seccion-subtitulo">El stock NO se afecta hasta confirmar el pedido</p>
+  </div>
+  <a href="{% url 'order_list' %}" class="btn btn-outline">← Volver</a>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="venta-grid">
+    <div>
+      <div class="tarjeta mb-2">
+        <div class="tarjeta-cab"><span class="tarjeta-titulo">👤 Cliente</span></div>
+        <div class="tarjeta-cuerpo">
+          <div class="form-grid">
+            <div class="form-grupo">
+              <label>Cliente (opcional)</label>
+              <select name="client" id="select-cliente" onchange="alCambiarCliente()">
+                <option value="" data-multiplicador="1">— Mostrador —</option>
+                {% for c in clients %}
+                <option value="{{ c.pk }}" data-multiplicador="{{ c.price_multiplier }}">
+                  {{ c.name }} — {{ c.get_client_type_display }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-grupo">
+              <label>Observaciones</label>
+              <input type="text" name="notes" placeholder="Notas opcionales...">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tarjeta">
+        <div class="tarjeta-cab">
+          <span class="tarjeta-titulo">📦 Productos</span>
+          <button type="button" class="btn btn-outline btn-sm" onclick="agregarItem()">+ Agregar</button>
+        </div>
+        <div class="tarjeta-cuerpo">
+          <div id="items-lista" class="items-lista"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="venta-resumen">
+      <h3>📋 Resumen</h3>
+      <div class="resumen-linea"><span class="td-muted">Artículos</span><span id="resumen-items" class="bold">0</span></div>
+      <div class="resumen-linea" style="padding-top:12px;margin-top:4px;border-top:2px solid var(--gris-borde);">
+        <span class="bold">TOTAL EST.</span>
+        <span class="resumen-total-valor" id="resumen-total">$0</span>
+      </div>
+      <div class="alerta alerta-info mt-2" style="font-size:0.78rem;padding:9px 12px;">
+        ℹ️ El stock <strong>NO</strong> cambia hasta confirmar.
+      </div>
+      <button type="submit" class="btn btn-negro btn-lg btn-bloque mt-2">📋 Crear Pedido</button>
+      <a href="{% url 'order_list' %}" class="btn btn-outline btn-bloque mt-1">Cancelar</a>
+    </div>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load jlb_filters %}
+
+{% block title %}{% if product %}Editar Producto{% else %}Nuevo Producto{% endif %} — JLB Sports{% endblock %}
+{% block topbar_title %}{% if product %}Editar Producto{% else %}Nuevo Producto{% endif %}{% endblock %}
+
+{% block content %}
+<div class="seccion-header">
+  <div>
+    <h1 class="seccion-titulo">{% if product %}Editar Producto{% else %}Nuevo Producto{% endif %}</h1>
+    <p class="seccion-subtitulo">
+      {% if product %}Actualice los datos del producto{% else %}Complete el formulario para registrar un nuevo producto{% endif %}
+    </p>
+  </div>
+  <a href="{% url 'product_list' %}" class="btn btn-outline">← Volver al Inventario</a>
+</div>
+
+<div class="tarjeta" style="max-width:860px;">
+  <div class="tarjeta-cab">
+    <span class="tarjeta-titulo">📋 Información del Producto</span>
+    {% if product %}
+      <span class="badge {% if product.stock_quantity == 0 %}badge-rojo{% elif product.is_low_stock %}badge-amarillo{% else %}badge-verde{% endif %}">
+        {% if product.stock_quantity == 0 %}🚫 Agotado
+        {% elif product.is_low_stock %}⚠️ Stock Bajo
+        {% else %}✓ Disponible{% endif %}
+      </span>
+    {% endif %}
+  </div>
+
+  <div class="tarjeta-cuerpo">
+    <form method="post" id="form-producto">
+      {% csrf_token %}
+
+      <!-- ── SECCIÓN 1: Identificación ──────────────────────── -->
+      <div style="margin-bottom:24px;">
+        <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--gris-texto);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--gris-borde);">
+          1 · Identificación
+        </div>
+        <div class="form-grid">
+
+          <div class="form-grupo full">
+            <label for="id_name">Nombre del Producto *</label>
+            <input type="text" id="id_name" name="name"
+                   value="{{ product.name|default:'' }}"
+                   required
+                   placeholder="Ej: Balón Strike, Camiseta Colombia, Guayos Copa...">
+          </div>
+
+          <div class="form-grupo">
+            <label for="id_category">Categoría</label>
+            <select id="id_category" name="category">
+              <option value="">— Sin categoría —</option>
+              {% for cat in categories %}
+              <option value="{{ cat.pk }}"
+                {% if product.category_id == cat.pk %}selected{% endif %}>
+                {{ cat.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-grupo">
+            <label for="id_marca">Marca</label>
+            <input type="text" id="id_marca" name="marca"
+                   value="{{ product.marca|default:'' }}"
+                   placeholder="Ej: Nike, Adidas, Puma...">
+          </div>
+
+          <div class="form-grupo">
+            <label for="id_talla">Talla</label>
+            <input type="text" id="id_talla" name="talla"
+                   value="{{ product.talla|default:'' }}"
+                   placeholder="Ej: 42, M, XL, Única...">
+            <span class="form-pista">Ingrese el número o texto de talla libremente</span>
+          </div>
+
+          <div class="form-grupo full">
+            <label for="id_description">Descripción</label>
+            <textarea id="id_description" name="description"
+                      rows="2"
+                      placeholder="Descripción opcional del producto...">{{ product.description|default:'' }}</textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── SECCIÓN 2: Precios ─────────────────────────────── -->
+      <div style="margin-bottom:24px;">
+        <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--gris-texto);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--gris-borde);">
+          2 · Precios (Pesos Colombianos COP)
+        </div>
+        <div class="form-grid">
+
+          <div class="form-grupo">
+            <label for="id_cost_price">Precio de Costo ($) *</label>
+            <input type="number" id="id_cost_price" name="cost_price"
+                   value="{{ product.cost_price|default:'' }}"
+                   step="1" min="0" required
+                   placeholder="Ej: 85000"
+                   oninput="calcularMargen()">
+            <span class="form-pista">Se mostrará como $85.000</span>
+          </div>
+
+          <div class="form-grupo">
+            <label for="id_sale_price">Precio de Venta ($) *</label>
+            <input type="number" id="id_sale_price" name="sale_price"
+                   value="{{ product.sale_price|default:'' }}"
+                   step="1" min="0" required
+                   placeholder="Ej: 150000"
+                   oninput="calcularMargen()">
+            <span class="form-pista">Se mostrará como $150.000</span>
+          </div>
+
+        </div>
+
+        <!-- Preview de precios en tiempo real -->
+        <div id="preview-precios" style="
+          display:grid;
+          grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+          gap:12px;
+          background:var(--gris-fondo);
+          border:1px solid var(--gris-borde);
+          border-radius:var(--radio-sm);
+          padding:16px 20px;
+          margin-top:14px;">
+          <div>
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Costo</div>
+            <div id="prev-costo" style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;color:var(--negro);">$0</div>
+          </div>
+          <div>
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Precio Venta</div>
+            <div id="prev-venta" style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;color:var(--negro);">$0</div>
+          </div>
+          <div>
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Ganancia Unit.</div>
+            <div id="prev-ganancia" style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;">$0</div>
+          </div>
+          <div>
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Margen %</div>
+            <div id="prev-margen" style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECCIÓN 3: Inventario ──────────────────────────── -->
+      <div style="margin-bottom:8px;">
+        <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--gris-texto);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--gris-borde);">
+          3 · Control de Inventario
+        </div>
+        <div class="form-grid">
+
+          <div class="form-grupo">
+            <label for="id_stock">Existencias Actuales *</label>
+            <input type="number" id="id_stock" name="stock_quantity"
+                   value="{{ product.stock_quantity|default:0 }}"
+                   min="0" required>
+          </div>
+
+          <div class="form-grupo">
+            <label for="id_min_stock">Stock Mínimo (Alerta)</label>
+            <input type="number" id="id_min_stock" name="min_stock"
+                   value="{{ product.min_stock|default:5 }}"
+                   min="0">
+            <span class="form-pista">Se mostrará alerta ⚠️ cuando el stock llegue a este valor</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Botones ─────────────────────────────────────────── -->
+      <div class="form-acciones">
+        <a href="{% url 'product_list' %}" class="btn btn-outline">Cancelar</a>
+        <button type="submit" class="btn btn-rojo">
+          {% if product %}💾 Guardar Cambios{% else %}➕ Registrar Producto{% endif %}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function formatoPesos(v) {
+    const n = parseInt(v) || 0;
+    return '$' + n.toLocaleString('es-CO').replace(/,/g, '.');
+  }
+
+  function calcularMargen() {
+    const costo    = parseInt(document.getElementById('id_cost_price').value) || 0;
+    const venta    = parseInt(document.getElementById('id_sale_price').value) || 0;
+    const ganancia = venta - costo;
+    const margen   = costo > 0 ? ((ganancia / costo) * 100).toFixed(1) : 0;
+    const colorM   = margen >= 30 ? 'var(--verde)' : margen >= 15 ? 'var(--amarillo)' : 'var(--rojo)';
+    const colorG   = ganancia >= 0 ? 'var(--verde)' : 'var(--rojo)';
+
+    document.getElementById('prev-costo').textContent    = formatoPesos(costo);
+    document.getElementById('prev-venta').textContent    = formatoPesos(venta);
+    document.getElementById('prev-ganancia').textContent = formatoPesos(ganancia);
+    document.getElementById('prev-ganancia').style.color = colorG;
+    document.getElementById('prev-margen').textContent   = margen + '%';
+    document.getElementById('prev-margen').style.color   = colorM;
+  }
+
+  calcularMargen();
+</script>
+{% endblock %}

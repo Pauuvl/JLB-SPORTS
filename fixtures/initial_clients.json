@@ -1,0 +1,27 @@
+[
+  {"model": "clients.client", "pk": 1, "fields": {
+    "name": "Carlos Gómez", "client_type": "regular",
+    "email": "carlos.gomez@email.com", "phone": "+57 310 123 4567",
+    "address": "Calle 10 #45-20, Medellín", "discount_percent": "0.00",
+    "notes": "Regular customer, prefers Nike brand.", "created_at": "2024-01-15T10:00:00Z"}},
+  {"model": "clients.client", "pk": 2, "fields": {
+    "name": "Academia Deportiva El Campín", "client_type": "company",
+    "email": "compras@elcampin.com.co", "phone": "+57 1 800 0000",
+    "address": "Carrera 30 #57-60, Bogotá", "discount_percent": "5.00",
+    "notes": "Buys in bulk every month for youth academy.", "created_at": "2024-01-16T10:00:00Z"}},
+  {"model": "clients.client", "pk": 3, "fields": {
+    "name": "Luisa Fernanda Ríos", "client_type": "vip",
+    "email": "luisa.rios@gmail.com", "phone": "+57 315 987 6543",
+    "address": "Av. El Poblado #25-10, Medellín", "discount_percent": "2.00",
+    "notes": "Top spender, semi-pro player.", "created_at": "2024-01-18T10:00:00Z"}},
+  {"model": "clients.client", "pk": 4, "fields": {
+    "name": "Distribuidora SportMax", "client_type": "wholesale",
+    "email": "pedidos@sportmax.co", "phone": "+57 4 555 7890",
+    "address": "Zona Industrial, Itagüí", "discount_percent": "0.00",
+    "notes": "Wholesale distributor, large volume orders.", "created_at": "2024-01-20T10:00:00Z"}},
+  {"model": "clients.client", "pk": 5, "fields": {
+    "name": "Andrés Mejía", "client_type": "regular",
+    "email": "andres.mejia@hotmail.com", "phone": "+57 317 444 5566",
+    "address": "Calle 80 #12-34, Medellín", "discount_percent": "0.00",
+    "notes": "", "created_at": "2024-02-01T10:00:00Z"}}
+]

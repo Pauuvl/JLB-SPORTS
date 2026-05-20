@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}{% if client %}Editar{% else %}Nuevo{% endif %} Cliente — JLB Sports{% endblock %}
+{% block topbar_title %}{% if client %}Editar Cliente{% else %}Nuevo Cliente{% endif %}{% endblock %}
+{% block content %}
+<div class="seccion-header">
+  <div>
+    <h1 class="seccion-titulo">{% if client %}Editar Cliente{% else %}Nuevo Cliente{% endif %}</h1>
+  </div>
+  <a href="{% url 'client_list' %}" class="btn btn-outline">← Volver</a>
+</div>
+<div class="tarjeta" style="max-width:760px;">
+  <div class="tarjeta-cab"><span class="tarjeta-titulo">📋 Información del Cliente</span></div>
+  <div class="tarjeta-cuerpo">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="form-grupo full">
+          <label>Nombre / Razón Social *</label>
+          <input type="text" name="name" value="{{ client.name|default:'' }}" required placeholder="Ej: Carlos Gómez">
+        </div>
+        <div class="form-grupo">
+          <label>Tipo de Cliente</label>
+          <select name="client_type">
+            {% for val, label in client_types %}
+            <option value="{{ val }}" {% if client.client_type == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-grupo">
+          <label>Descuento Adicional (%)</label>
+          <input type="number" name="discount_percent" value="{{ client.discount_percent|default:0 }}" min="0" max="100" step="0.5">
+          <span class="form-pista">Se suma al descuento base del tipo</span>
+        </div>
+        <div class="form-grupo">
+          <label>Correo Electrónico</label>
+          <input type="email" name="email" value="{{ client.email|default:'' }}" placeholder="cliente@correo.com">
+        </div>
+        <div class="form-grupo">
+          <label>Teléfono</label>
+          <input type="text" name="phone" value="{{ client.phone|default:'' }}" placeholder="+57 300 000 0000">
+        </div>
+        <div class="form-grupo full">
+          <label>Dirección</label>
+          <textarea name="address" rows="2" placeholder="Dirección...">{{ client.address|default:'' }}</textarea>
+        </div>
+        <div class="form-grupo full">
+          <label>Observaciones</label>
+          <textarea name="notes" rows="2" placeholder="Notas adicionales...">{{ client.notes|default:'' }}</textarea>
+        </div>
+      </div>
+      <div style="background:var(--rojo-suave);border:1px solid var(--rojo-borde);border-radius:var(--radio-sm);padding:12px 16px;margin-top:16px;font-size:0.82rem;color:var(--rojo-oscuro);">
+        💡 Descuentos base: Regular 0% · Almacen 5% · Distribuidor 10% · Entrenador 15% + descuento adicional
+      </div>
+      <div class="form-acciones">
+        <a href="{% url 'client_list' %}" class="btn btn-outline">Cancelar</a>
+        <button type="submit" class="btn btn-rojo">{% if client %} Guardar{% else %} Registrar{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

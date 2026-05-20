@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Categorías — JLB Sports{% endblock %}
+{% block topbar_title %}Categorías{% endblock %}
+{% block content %}
+<div class="seccion-header">
+  <div>
+    <h1 class="seccion-titulo">Categorías</h1>
+    <p class="seccion-subtitulo">Organice sus productos</p>
+  </div>
+  <a href="{% url 'product_list' %}" class="btn btn-outline">← Inventario</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start;">
+  <div class="tarjeta">
+    <div class="tarjeta-cab">
+      <span class="tarjeta-titulo">🏷️ Categorías ({{ categories.count }})</span>
+    </div>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr><th>Nombre</th><th>Descripción</th><th>Productos</th></tr></thead>
+        <tbody>
+          {% for cat in categories %}
+          <tr>
+            <td class="bold">{{ cat.name }}</td>
+            <td class="td-muted">{{ cat.description|default:"—" }}</td>
+            <td><span class="badge badge-negro">{{ cat.product_count }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3">
+            <div class="estado-vacio" style="padding:28px;">
+              <div class="estado-vacio-titulo">Sin categorías</div>
+            </div>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <div class="tarjeta-cab"><span class="tarjeta-titulo">➕ Nueva Categoría</span></div>
+    <div class="tarjeta-cuerpo">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-grupo mb-2">
+          <label>Nombre *</label>
+          <input type="text" name="name" required placeholder="Ej: Calzado Deportivo">
+        </div>
+        <div class="form-grupo mb-2">
+          <label>Descripción</label>
+          <textarea name="description" rows="2" placeholder="Opcional..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-rojo btn-bloque">Crear Categoría</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

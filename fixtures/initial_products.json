@@ -1,0 +1,48 @@
+[
+  {"model": "inventory.category", "pk": 1, "fields": {"name": "Footwear", "description": "Sports shoes and cleats"}},
+  {"model": "inventory.category", "pk": 2, "fields": {"name": "Balls", "description": "All types of sports balls"}},
+  {"model": "inventory.category", "pk": 3, "fields": {"name": "Apparel", "description": "Jerseys, shorts, socks"}},
+  {"model": "inventory.category", "pk": 4, "fields": {"name": "Equipment", "description": "Training and protective gear"}},
+  {"model": "inventory.category", "pk": 5, "fields": {"name": "Accessories", "description": "Bags, bottles, misc"}},
+
+  {"model": "inventory.product", "pk": 1, "fields": {
+    "name": "Nike Phantom GT Football Boot", "category": 1,
+    "cost_price": "85.00", "sale_price": "149.99", "stock_quantity": 24, "min_stock": 5,
+    "description": "Professional football boot with precision fit collar.", "created_at": "2024-01-10T09:00:00Z", "updated_at": "2024-01-10T09:00:00Z"}},
+  {"model": "inventory.product", "pk": 2, "fields": {
+    "name": "Adidas Predator Edge Cleat", "category": 1,
+    "cost_price": "78.00", "sale_price": "139.99", "stock_quantity": 18, "min_stock": 5,
+    "description": "High-grip cleat for demanding pitches.", "created_at": "2024-01-10T09:00:00Z", "updated_at": "2024-01-10T09:00:00Z"}},
+  {"model": "inventory.product", "pk": 3, "fields": {
+    "name": "Nike Strike Football Size 5", "category": 2,
+    "cost_price": "18.00", "sale_price": "34.99", "stock_quantity": 50, "min_stock": 10,
+    "description": "Durable match ball, FIFA Quality Pro certified.", "created_at": "2024-01-10T09:00:00Z", "updated_at": "2024-01-10T09:00:00Z"}},
+  {"model": "inventory.product", "pk": 4, "fields": {
+    "name": "Adidas Tango Ball Size 4", "category": 2,
+    "cost_price": "14.00", "sale_price": "27.99", "stock_quantity": 40, "min_stock": 10,
+    "description": "Training ball for youth leagues.", "created_at": "2024-01-10T09:00:00Z", "updated_at": "2024-01-10T09:00:00Z"}},
+  {"model": "inventory.product", "pk": 5, "fields": {
+    "name": "Colombia National Team Jersey 2024", "category": 3,
+    "cost_price": "35.00", "sale_price": "69.99", "stock_quantity": 30, "min_stock": 8,
+    "description": "Official replica jersey, polyester breathable fabric.", "created_at": "2024-01-10T09:00:00Z", "updated_at": "2024-01-10T09:00:00Z"}},
+  {"model": "inventory.product", "pk": 6, "fields": {
+    "name": "Training Shorts Dry-Fit", "category": 3,
+    "cost_price": "10.00", "sale_price": "21.99", "stock_quantity": 60, "min_stock": 10,
+    "description": "Lightweight moisture-wicking training shorts.", "created_at": "2024-01-10T09:00:00Z", "updated_at": "2024-01-10T09:00:00Z"}},
+  {"model": "inventory.product", "pk": 7, "fields": {
+    "name": "Goalkeeper Gloves Pro", "category": 4,
+    "cost_price": "22.00", "sale_price": "44.99", "stock_quantity": 15, "min_stock": 4,
+    "description": "Latex palm goalkeeper gloves, all weather.", "created_at": "2024-01-10T09:00:00Z", "updated_at": "2024-01-10T09:00:00Z"}},
+  {"model": "inventory.product", "pk": 8, "fields": {
+    "name": "Shin Guards Adult", "category": 4,
+    "cost_price": "8.00", "sale_price": "16.99", "stock_quantity": 3, "min_stock": 5,
+    "description": "Lightweight EVA foam shin guards.", "created_at": "2024-01-10T09:00:00Z", "updated_at": "2024-01-10T09:00:00Z"}},
+  {"model": "inventory.product", "pk": 9, "fields": {
+    "name": "Sports Bag 40L", "category": 5,
+    "cost_price": "25.00", "sale_price": "49.99", "stock_quantity": 20, "min_stock": 4,
+    "description": "Large capacity sports duffel bag.", "created_at": "2024-01-10T09:00:00Z", "updated_at": "2024-01-10T09:00:00Z"}},
+  {"model": "inventory.product", "pk": 10, "fields": {
+    "name": "Water Bottle 1L Squeeze", "category": 5,
+    "cost_price": "5.00", "sale_price": "11.99", "stock_quantity": 2, "min_stock": 5,
+    "description": "BPA-free squeeze bottle with sports cap.", "created_at": "2024-01-10T09:00:00Z", "updated_at": "2024-01-10T09:00:00Z"}}
+]
