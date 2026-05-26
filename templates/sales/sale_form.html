@@ -8,7 +8,14 @@
 <script>
 window.PRODUCTOS = [
   {% for p in products %}
-  { id: {{ p.pk }}, nombre: "{{ p.name|escapejs }}", precio: {{ p.sale_price }}, stock: {{ p.stock_quantity }} }{% if not forloop.last %},{% endif %}
+  {
+    id: {{ p.pk }},
+    nombre: "{{ p.name|escapejs }}",
+    codigo: "{{ p.codigo|escapejs }}",
+    precio: {{ p.sale_price }},
+    stock: {{ p.stock_quantity }},
+    colores: [{% for c in p.get_colores_lista %}"{{ c|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]
+  }{% if not forloop.last %},{% endif %}
   {% endfor %}
 ];
 </script>
@@ -89,4 +96,125 @@ window.PRODUCTOS = [
     </div>
   </div>
 </form>
+
+<script>
+let multiplicadorCliente = 1;
+
+function alCambiarCliente() {
+  const sel = document.getElementById('select-cliente');
+  multiplicadorCliente = parseFloat(sel.selectedOptions[0].dataset.multiplicador) || 1;
+  recalcularTodo();
+}
+
+function formatoPesos(v) {
+  return '$' + Math.round(v).toLocaleString('es-CO').replace(/,/g, '.');
+}
+
+let itemIndex = 0;
+
+function agregarItem() {
+  const lista = document.getElementById('items-lista');
+  const idx = itemIndex++;
+
+  const opcionesProducto = window.PRODUCTOS.map(p => {
+    const codigo = p.codigo ? `[${p.codigo}] ` : '';
+    return `<option value="${p.id}" data-precio="${p.precio}" data-stock="${p.stock}" data-colores='${JSON.stringify(p.colores)}'>${codigo}${p.nombre} — Stock: ${p.stock}</option>`;
+  }).join('');
+
+  const div = document.createElement('div');
+  div.className = 'item-fila';
+  div.id = `item-${idx}`;
+  div.innerHTML = `
+    <div class="item-fila-grid">
+      <div class="form-grupo" style="grid-column:1/-1">
+        <label>Producto</label>
+        <select name="product_id[]" onchange="alCambiarProducto(${idx})" required style="border:2px solid var(--rojo);">
+          <option value="">— Seleccionar —</option>
+          ${opcionesProducto}
+        </select>
+      </div>
+      <div class="form-grupo" id="color-grupo-${idx}" style="display:none;grid-column:1/-1">
+        <label>Color</label>
+        <select name="color_vendido[]" id="color-select-${idx}">
+          <option value="">— Sin especificar —</option>
+        </select>
+      </div>
+      <div class="form-grupo">
+        <label>Cantidad</label>
+        <input type="number" name="quantity[]" id="qty-${idx}" value="1" min="1" oninput="recalcularTodo()" required>
+      </div>
+      <div class="form-grupo">
+        <label>Precio Unit.</label>
+        <input type="text" id="precio-${idx}" readonly value="$0" style="background:var(--gris-fondo);">
+      </div>
+      <div class="form-grupo">
+        <label>Subtotal</label>
+        <input type="text" id="subtotal-${idx}" readonly value="$0" style="background:var(--gris-fondo);font-weight:700;">
+      </div>
+    </div>
+    <button type="button" onclick="eliminarItem(${idx})" style="margin-top:8px;background:none;border:none;color:var(--rojo);cursor:pointer;font-size:0.85rem;">✕ Quitar</button>
+    <hr style="margin:14px 0;border-color:var(--gris-borde);">
+  `;
+  lista.appendChild(div);
+  recalcularTodo();
+}
+
+function alCambiarProducto(idx) {
+  const sel = document.querySelector(`#item-${idx} select[name="product_id[]"]`);
+  const opt = sel.selectedOptions[0];
+  if (!opt || !opt.value) return;
+
+  const precio = parseFloat(opt.dataset.precio) * multiplicadorCliente;
+  const colores = JSON.parse(opt.dataset.colores || '[]');
+
+  document.getElementById(`precio-${idx}`).value = formatoPesos(precio);
+
+  // Mostrar selector de color si el producto tiene colores
+  const colorGrupo = document.getElementById(`color-grupo-${idx}`);
+  const colorSelect = document.getElementById(`color-select-${idx}`);
+  if (colores.length > 0) {
+    colorSelect.innerHTML = '<option value="">— Sin especificar —</option>' +
+      colores.map(c => `<option value="${c}">${c}</option>`).join('');
+    colorGrupo.style.display = 'block';
+  } else {
+    colorSelect.innerHTML = '<option value="">— Sin especificar —</option>';
+    colorGrupo.style.display = 'none';
+  }
+
+  recalcularTodo();
+}
+
+function recalcularTodo() {
+  let total = 0;
+  let totalItems = 0;
+
+  document.querySelectorAll('.item-fila').forEach(fila => {
+    const idx = fila.id.replace('item-', '');
+    const sel = fila.querySelector('select[name="product_id[]"]');
+    const opt = sel?.selectedOptions[0];
+    if (!opt || !opt.value) return;
+
+    const precio = parseFloat(opt.dataset.precio) * multiplicadorCliente;
+    const qty = parseInt(document.getElementById(`qty-${idx}`)?.value) || 1;
+    const subtotal = precio * qty;
+
+    document.getElementById(`precio-${idx}`).value = formatoPesos(precio);
+    document.getElementById(`subtotal-${idx}`).value = formatoPesos(subtotal);
+
+    total += subtotal;
+    totalItems += qty;
+  });
+
+  document.getElementById('resumen-total').textContent = formatoPesos(total);
+  document.getElementById('resumen-items').textContent = totalItems;
+}
+
+function eliminarItem(idx) {
+  document.getElementById(`item-${idx}`)?.remove();
+  recalcularTodo();
+}
+
+// Agregar primer item automáticamente
+agregarItem();
+</script>
 {% endblock %}

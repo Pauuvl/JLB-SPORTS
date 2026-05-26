@@ -89,9 +89,11 @@ def product_list(request):
     if query:
         products = products.filter(
             Q(name__icontains=query) |
+            Q(codigo__icontains=query) |
             Q(description__icontains=query) |
             Q(marca__icontains=query) |
-            Q(talla__icontains=query)
+            Q(talla__icontains=query) |
+            Q(color__icontains=query)
         )
 
     if category_id:
@@ -139,9 +141,11 @@ def product_create(request):
     if request.method == 'POST':
 
         name = request.POST.get('name', '').strip()
+        codigo = request.POST.get('codigo', '').strip()
         category_id = request.POST.get('category') or None
         marca = request.POST.get('marca', '').strip()
         talla = request.POST.get('talla', '').strip()
+        color = request.POST.get('color', '').strip()
         cost_price = request.POST.get('cost_price')
         sale_price = request.POST.get('sale_price')
         stock_quantity = request.POST.get('stock_quantity')
@@ -156,9 +160,11 @@ def product_create(request):
         else:
             Product.objects.create(
                 name=name,
+                codigo=codigo,
                 category_id=category_id,
                 marca=marca,
                 talla=talla,
+                color=color,
                 cost_price=cost_price,
                 sale_price=sale_price,
                 stock_quantity=stock_quantity,
@@ -187,9 +193,11 @@ def product_edit(request, pk):
     if request.method == 'POST':
 
         product.name = request.POST.get('name', '').strip()
+        product.codigo = request.POST.get('codigo', '').strip()
         product.category_id = request.POST.get('category') or None
         product.marca = request.POST.get('marca', '').strip()
         product.talla = request.POST.get('talla', '').strip()
+        product.color = request.POST.get('color', '').strip()
         product.cost_price = request.POST.get('cost_price')
         product.sale_price = request.POST.get('sale_price')
         product.stock_quantity = request.POST.get('stock_quantity')

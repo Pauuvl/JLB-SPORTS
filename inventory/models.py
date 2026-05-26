@@ -11,6 +11,14 @@ class Category(models.Model):
 
 class Product(models.Model):
 
+    codigo = models.CharField(
+        max_length=50,
+        unique=True,
+        blank=True,
+        default='',
+        verbose_name='Código'
+    )
+
     name = models.CharField(max_length=200)
 
     category = models.ForeignKey(
@@ -33,6 +41,14 @@ class Product(models.Model):
         default=''
     )
 
+    color = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='Color(es)',
+        help_text='Colores disponibles separados por coma. Ej: Rojo, Azul, Negro'
+    )
+
     description = models.TextField(blank=True)
 
     cost_price = models.DecimalField(
@@ -52,7 +68,18 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.name
+        parts = [self.name]
+        if self.talla:
+            parts.append(f'T:{self.talla}')
+        if self.color:
+            parts.append(f'C:{self.color}')
+        return ' | '.join(parts)
+
+    def get_colores_lista(self):
+        """Retorna lista de colores disponibles."""
+        if self.color:
+            return [c.strip() for c in self.color.split(',') if c.strip()]
+        return []
 
     @property
     def stock_value(self):
@@ -67,7 +94,6 @@ class Product(models.Model):
 
     @property
     def profit_margin(self):
-        """Margen de ganancia en porcentaje sobre el costo."""
         if self.cost_price and self.cost_price > 0:
             return ((self.sale_price - self.cost_price) / self.cost_price) * 100
         return 0

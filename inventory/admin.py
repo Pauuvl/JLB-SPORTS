@@ -11,19 +11,30 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = [
+        'codigo',
         'name',
         'category',
+        'marca',
         'talla',
+        'color',
         'sale_price',
         'stock_quantity',
-        'is_low_stock'
+        'get_is_low_stock',
     ]
 
     list_filter = [
         'category',
-        'talla'
+        'talla',
+        'marca',
     ]
 
     search_fields = [
-        'name'
+        'name',
+        'codigo',
+        'color',
+        'marca',
     ]
+
+    @admin.display(boolean=True, description='Stock bajo')
+    def get_is_low_stock(self, obj):
+        return obj.is_low_stock

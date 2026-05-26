@@ -20,8 +20,8 @@ class Sale(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        client_name = self.client.name if self.client else 'Walk-in'
-        return f"Sale #{self.pk} - {client_name} - ${self.total_amount}"
+        client_name = self.client.name if self.client else 'Mostrador'
+        return f"Venta #{self.pk} - {client_name} - ${self.total_amount}"
 
     def calculate_total(self):
         total = sum(item.subtotal for item in self.items.all())
@@ -34,9 +34,16 @@ class SaleItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    color_vendido = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='Color vendido'
+    )
 
     def __str__(self):
-        return f"{self.product.name} x{self.quantity}"
+        color_str = f' ({self.color_vendido})' if self.color_vendido else ''
+        return f"{self.product.name}{color_str} x{self.quantity}"
 
     @property
     def subtotal(self):

@@ -7,12 +7,9 @@ python manage.py collectstatic --no-input
 
 python manage.py migrate
 
-# Cargar datos iniciales
-if [ -f "fixtures/initial_products.json" ]; then
-    python manage.py loaddata fixtures/initial_products.json || true
-fi
-if [ -f "fixtures/initial_clients.json" ]; then
-    python manage.py loaddata fixtures/initial_clients.json || true
+# Cargar datos desde la base de datos local exportada
+if [ -f "fixtures/initial_data.json" ]; then
+    python manage.py loaddata fixtures/initial_data.json || true
 fi
 
 # Crear superusuario desde variables de entorno si no existe

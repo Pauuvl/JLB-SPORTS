@@ -24,12 +24,25 @@
     <div class="tabla-wrap">
       <table>
         <thead>
-          <tr><th>Producto</th><th>Precio Unit.</th><th>Cantidad</th><th style="text-align:right">Subtotal</th></tr>
+          <tr>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Color</th>
+            <th>Precio Unit.</th>
+            <th>Cantidad</th>
+            <th style="text-align:right">Subtotal</th>
+          </tr>
         </thead>
         <tbody>
           {% for item in sale.items.all %}
           <tr>
+            <td class="td-muted" style="font-size:0.8rem;">{{ item.product.codigo|default:"—" }}</td>
             <td class="bold">{{ item.product.name }}</td>
+            <td>
+              {% if item.color_vendido %}
+              <span class="badge badge-azul">{{ item.color_vendido }}</span>
+              {% else %}—{% endif %}
+            </td>
             <td>{{ item.unit_price|pesos }}</td>
             <td>{{ item.quantity }} und.</td>
             <td style="text-align:right" class="bold">{{ item.subtotal|pesos }}</td>
@@ -38,7 +51,7 @@
         </tbody>
         <tfoot>
           <tr style="background:var(--gris-fondo);">
-            <td colspan="3" class="bold" style="padding:12px 16px;text-align:right;">TOTAL</td>
+            <td colspan="5" class="bold" style="padding:12px 16px;text-align:right;">TOTAL</td>
             <td style="padding:12px 16px;text-align:right;font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:var(--rojo);">
               {{ sale.total_amount|pesos }}
             </td>

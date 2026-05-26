@@ -1,6 +1,4 @@
 from django.contrib.auth.decorators import login_required
-# sales/views.py — MEJORADO con mensajes en español y formato de pesos colombianos
-
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db import transaction
@@ -12,9 +10,7 @@ from inventory.models import Product
 from clients.models import Client
 
 
-@login_required
 def _fmt_pesos(value):
-    """Formatea un Decimal a pesos colombianos: $1.250.000"""
     try:
         val = int(Decimal(str(value)))
         return f"${val:,}".replace(",", ".")
@@ -25,28 +21,27 @@ def _fmt_pesos(value):
 @login_required
 def sale_list(request):
     sales = Sale.objects.select_related('client').prefetch_related('items__product').all()
-    # Totales rápidos
     total_completadas = Sale.objects.filter(status='completed').aggregate(
         t=Sum('total_amount'))['t'] or 0
     context = {
-        'sales':              sales,
-        'total_completadas':  total_completadas,
-        'active_page':        'sales',
+        'sales': sales,
+        'total_completadas': total_completadas,
+        'active_page': 'sales',
     }
     return render(request, 'sales/sale_list.html', context)
 
 
 @login_required
 def sale_create(request):
-    # Solo mostrar productos con stock disponible
     products = Product.objects.filter(stock_quantity__gt=0).select_related('category')
-    clients  = Client.objects.all()
+    clients = Client.objects.all()
 
     if request.method == 'POST':
-        client_id   = request.POST.get('client') or None
-        notes       = request.POST.get('notes', '')
+        client_id = request.POST.get('client') or None
+        notes = request.POST.get('notes', '')
         product_ids = request.POST.getlist('product_id[]')
-        quantities  = request.POST.getlist('quantity[]')
+        quantities = request.POST.getlist('quantity[]')
+        colores = request.POST.getlist('color_vendido[]')
 
         if not product_ids:
             messages.error(request, 'Debe agregar al menos un producto a la venta.')
@@ -54,7 +49,7 @@ def sale_create(request):
                 'products': products, 'clients': clients, 'active_page': 'sales'
             })
 
-        client           = Client.objects.get(pk=client_id) if client_id else None
+        client = Client.objects.get(pk=client_id) if client_id else None
         price_multiplier = client.price_multiplier if client else 1.0
 
         try:
@@ -64,11 +59,11 @@ def sale_create(request):
                     discount_applied=client.discount_percent if client else 0,
                 )
 
-                for pid, qty in zip(product_ids, quantities):
+                for i, (pid, qty) in enumerate(zip(product_ids, quantities)):
                     product = Product.objects.select_for_update().get(pk=pid)
-                    qty     = int(qty)
+                    qty = int(qty)
+                    color = colores[i] if i < len(colores) else ''
 
-                    # ── Validación de stock insuficiente ──────────────
                     if product.stock_quantity < qty:
                         raise ValueError(
                             f'Stock insuficiente para "{product.name}". '
@@ -80,9 +75,9 @@ def sale_create(request):
                         sale=sale, product=product,
                         quantity=qty,
                         unit_price=unit_price.quantize(Decimal('1')),
+                        color_vendido=color,
                     )
 
-                    # ── Descuento automático de stock ─────────────────
                     product.stock_quantity -= qty
                     product.save()
 
@@ -120,7 +115,6 @@ def sale_cancel(request, pk):
     if request.method == 'POST':
         if sale.status == 'completed':
             with transaction.atomic():
-                # ── Restaurar stock al anular la venta ───────────────
                 for item in sale.items.all():
                     item.product.stock_quantity += item.quantity
                     item.product.save()
@@ -140,20 +134,21 @@ def sale_cancel(request, pk):
 
 @login_required
 def get_product_price(request):
-    """Endpoint AJAX: devuelve precio del producto con descuento de cliente."""
     product_id = request.GET.get('product_id')
-    client_id  = request.GET.get('client_id')
+    client_id = request.GET.get('client_id')
     try:
         product = Product.objects.get(pk=product_id)
-        price   = float(product.sale_price)
+        price = float(product.sale_price)
         if client_id:
             client = Client.objects.get(pk=client_id)
-            price  = price * client.price_multiplier
+            price = price * client.price_multiplier
 
         return JsonResponse({
-            'price':  int(round(price)),
-            'stock':  product.stock_quantity,
-            'name':   product.name,
+            'price': int(round(price)),
+            'stock': product.stock_quantity,
+            'name': product.name,
+            'codigo': product.codigo,
+            'colores': product.get_colores_lista(),
             'status': 'agotado' if product.stock_quantity == 0
                       else ('bajo' if product.is_low_stock else 'ok'),
         })

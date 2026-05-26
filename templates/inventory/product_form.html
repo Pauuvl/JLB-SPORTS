@@ -38,12 +38,12 @@
         </div>
         <div class="form-grid">
 
-          <div class="form-grupo full">
-            <label for="id_name">Nombre del Producto *</label>
-            <input type="text" id="id_name" name="name"
-                   value="{{ product.name|default:'' }}"
-                   required
-                   placeholder="Ej: Balón Strike, Camiseta Colombia, Guayos Copa...">
+          <div class="form-grupo">
+            <label for="id_codigo">Código del Producto</label>
+            <input type="text" id="id_codigo" name="codigo"
+                   value="{{ product.codigo|default:'' }}"
+                   placeholder="Ej: JLB-001, BAL-42, CAM-COL...">
+            <span class="form-pista">Código único para identificar el producto</span>
           </div>
 
           <div class="form-grupo">
@@ -59,6 +59,14 @@
             </select>
           </div>
 
+          <div class="form-grupo full">
+            <label for="id_name">Nombre del Producto *</label>
+            <input type="text" id="id_name" name="name"
+                   value="{{ product.name|default:'' }}"
+                   required
+                   placeholder="Ej: Balón Strike, Camiseta Colombia, Guayos Copa...">
+          </div>
+
           <div class="form-grupo">
             <label for="id_marca">Marca</label>
             <input type="text" id="id_marca" name="marca"
@@ -71,7 +79,15 @@
             <input type="text" id="id_talla" name="talla"
                    value="{{ product.talla|default:'' }}"
                    placeholder="Ej: 42, M, XL, Única...">
-            <span class="form-pista">Ingrese el número o texto de talla libremente</span>
+            <span class="form-pista">Número o texto de talla</span>
+          </div>
+
+          <div class="form-grupo full">
+            <label for="id_color">Color(es) disponibles</label>
+            <input type="text" id="id_color" name="color"
+                   value="{{ product.color|default:'' }}"
+                   placeholder="Ej: Rojo, Azul, Negro, Blanco">
+            <span class="form-pista">Separe los colores con comas. Al vender se podrá seleccionar cuál se vendió.</span>
           </div>
 
           <div class="form-grupo full">
@@ -113,16 +129,7 @@
 
         </div>
 
-        <!-- Preview de precios en tiempo real -->
-        <div id="preview-precios" style="
-          display:grid;
-          grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-          gap:12px;
-          background:var(--gris-fondo);
-          border:1px solid var(--gris-borde);
-          border-radius:var(--radio-sm);
-          padding:16px 20px;
-          margin-top:14px;">
+        <div id="preview-precios" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;background:var(--gris-fondo);border:1px solid var(--gris-borde);border-radius:var(--radio-sm);padding:16px 20px;margin-top:14px;">
           <div>
             <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Costo</div>
             <div id="prev-costo" style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;color:var(--negro);">$0</div>
