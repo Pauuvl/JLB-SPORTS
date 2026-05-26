@@ -379,6 +379,13 @@
       <span>⚙️</span>
       Administración Django
     </a>
+    <form method="post" action="{% url 'logout' %}" style="margin-top:10px;">
+      {% csrf_token %}
+      <button type="submit" class="sidebar-admin-link" style="width:100%;border:none;cursor:pointer;background:rgba(220,38,38,0.15);">
+        <span>🚪</span>
+        Cerrar Sesión
+      </button>
+    </form>
   </div>
 
 </aside>
@@ -397,6 +404,9 @@
 
     <div class="topbar-der">
       <span class="topbar-fecha" id="topbar-fecha"></span>
+      {% if user.is_authenticated %}
+      <span class="topbar-chip">👤 {{ user.username }}</span>
+      {% endif %}
       <span class="topbar-chip">JLB Sports v1.0</span>
     </div>
 

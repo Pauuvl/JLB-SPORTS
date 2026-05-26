@@ -1,9 +1,11 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Count, Sum, Q
 from .models import Client
 
 
+@login_required
 def client_list(request):
     query = request.GET.get('q', '')
     client_type = request.GET.get('type', '')
@@ -24,6 +26,7 @@ def client_list(request):
     return render(request, 'clients/client_list.html', context)
 
 
+@login_required
 def client_create(request):
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -49,6 +52,7 @@ def client_create(request):
     })
 
 
+@login_required
 def client_edit(request, pk):
     client = get_object_or_404(Client, pk=pk)
     if request.method == 'POST':
@@ -68,6 +72,7 @@ def client_edit(request, pk):
     })
 
 
+@login_required
 def client_delete(request, pk):
     client = get_object_or_404(Client, pk=pk)
     if request.method == 'POST':
@@ -78,6 +83,7 @@ def client_delete(request, pk):
     return render(request, 'clients/client_confirm_delete.html', {'client': client, 'active_page': 'clients'})
 
 
+@login_required
 def client_detail(request, pk):
     client = get_object_or_404(Client, pk=pk)
     sales = client.sales.order_by('-created_at')[:10]

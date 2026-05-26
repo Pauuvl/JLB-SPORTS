@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db import transaction
@@ -8,12 +9,14 @@ from clients.models import Client
 from sales.models import Sale, SaleItem
 
 
+@login_required
 def order_list(request):
     orders = Order.objects.select_related('client').all()
     context = {'orders': orders, 'active_page': 'orders'}
     return render(request, 'orders/order_list.html', context)
 
 
+@login_required
 def order_create(request):
     products = Product.objects.select_related('category').all()
     clients = Client.objects.all()
@@ -54,6 +57,7 @@ def order_create(request):
     })
 
 
+@login_required
 def order_detail(request, pk):
     order = get_object_or_404(
         Order.objects.select_related('client').prefetch_related('items__product'), pk=pk
@@ -61,6 +65,7 @@ def order_detail(request, pk):
     return render(request, 'orders/order_detail.html', {'order': order, 'active_page': 'orders'})
 
 
+@login_required
 def order_confirm(request, pk):
     order = get_object_or_404(Order, pk=pk)
     if request.method == 'POST':
@@ -76,6 +81,7 @@ def order_confirm(request, pk):
     return render(request, 'orders/order_confirm.html', {'order': order, 'active_page': 'orders'})
 
 
+@login_required
 def order_to_sale(request, pk):
     """Convierte un pedido confirmado en venta registrada (sin descontar stock de nuevo)."""
     order = get_object_or_404(
@@ -107,6 +113,7 @@ def order_to_sale(request, pk):
     return render(request, 'orders/order_to_sale_confirm.html', {'order': order, 'active_page': 'orders'})
 
 
+@login_required
 def order_delete(request, pk):
     """Elimina un pedido. Si estaba confirmado, restaura el stock."""
     order = get_object_or_404(
@@ -124,6 +131,7 @@ def order_delete(request, pk):
     return render(request, 'orders/order_delete_confirm.html', {'order': order, 'active_page': 'orders'})
 
 
+@login_required
 def order_cancel(request, pk):
     order = get_object_or_404(Order, pk=pk)
     if request.method == 'POST':

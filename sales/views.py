@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 # sales/views.py — MEJORADO con mensajes en español y formato de pesos colombianos
 
 from django.shortcuts import render, get_object_or_404, redirect
@@ -11,6 +12,7 @@ from inventory.models import Product
 from clients.models import Client
 
 
+@login_required
 def _fmt_pesos(value):
     """Formatea un Decimal a pesos colombianos: $1.250.000"""
     try:
@@ -20,6 +22,7 @@ def _fmt_pesos(value):
         return f"${value}"
 
 
+@login_required
 def sale_list(request):
     sales = Sale.objects.select_related('client').prefetch_related('items__product').all()
     # Totales rápidos
@@ -33,6 +36,7 @@ def sale_list(request):
     return render(request, 'sales/sale_list.html', context)
 
 
+@login_required
 def sale_create(request):
     # Solo mostrar productos con stock disponible
     products = Product.objects.filter(stock_quantity__gt=0).select_related('category')
@@ -100,6 +104,7 @@ def sale_create(request):
     })
 
 
+@login_required
 def sale_detail(request, pk):
     sale = get_object_or_404(
         Sale.objects.select_related('client').prefetch_related('items__product'), pk=pk
@@ -109,6 +114,7 @@ def sale_detail(request, pk):
     })
 
 
+@login_required
 def sale_cancel(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     if request.method == 'POST':
@@ -132,6 +138,7 @@ def sale_cancel(request, pk):
     })
 
 
+@login_required
 def get_product_price(request):
     """Endpoint AJAX: devuelve precio del producto con descuento de cliente."""
     product_id = request.GET.get('product_id')

@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from decimal import Decimal
@@ -6,12 +7,14 @@ from inventory.models import Product
 from clients.models import Client
 
 
+@login_required
 def quote_list(request):
     quotes = Quote.objects.select_related('client').all()
     context = {'quotes': quotes, 'active_page': 'quotes'}
     return render(request, 'quotes/quote_list.html', context)
 
 
+@login_required
 def quote_create(request):
     products = Product.objects.select_related('category').all()
     clients  = Client.objects.all()
@@ -60,6 +63,7 @@ def quote_create(request):
     })
 
 
+@login_required
 def quote_detail(request, pk):
     quote = get_object_or_404(
         Quote.objects.select_related('client').prefetch_related('items__product'), pk=pk
@@ -67,6 +71,7 @@ def quote_detail(request, pk):
     return render(request, 'quotes/quote_detail.html', {'quote': quote, 'active_page': 'quotes'})
 
 
+@login_required
 def quote_status(request, pk):
     quote = get_object_or_404(Quote, pk=pk)
     if request.method == 'POST':
@@ -78,6 +83,7 @@ def quote_status(request, pk):
         return redirect('quote_detail', pk=pk)
 
 
+@login_required
 def quote_delete(request, pk):
     quote = get_object_or_404(Quote, pk=pk)
     if request.method == 'POST':

@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 # inventory/views.py
 
 from django.shortcuts import render, get_object_or_404, redirect
@@ -11,6 +12,7 @@ from clients.models import Client
 from orders.models import Order
 
 
+@login_required
 def dashboard(request):
 
     total_products = Product.objects.count()
@@ -75,6 +77,7 @@ def dashboard(request):
     return render(request, 'dashboard.html', context)
 
 
+@login_required
 def product_list(request):
 
     query = request.GET.get('q', '')
@@ -128,6 +131,7 @@ def product_list(request):
     return render(request, 'inventory/product_list.html', context)
 
 
+@login_required
 def product_create(request):
 
     categories = Category.objects.all()
@@ -174,6 +178,7 @@ def product_create(request):
     )
 
 
+@login_required
 def product_edit(request, pk):
 
     product = get_object_or_404(Product, pk=pk)
@@ -206,6 +211,7 @@ def product_edit(request, pk):
     )
 
 
+@login_required
 def product_delete(request, pk):
 
     product = get_object_or_404(Product, pk=pk)
@@ -223,6 +229,7 @@ def product_delete(request, pk):
     )
 
 
+@login_required
 def category_list(request):
 
     categories = Category.objects.annotate(product_count=Count('products'))

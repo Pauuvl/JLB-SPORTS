@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from inventory.models import Product
@@ -5,6 +6,7 @@ from .models import PriceList, PriceListItem
 from clients.models import Client
 
 
+@login_required
 def pricing_overview(request):
     products = Product.objects.select_related('category').all()
     price_lists = PriceList.objects.filter(is_active=True).prefetch_related('items__product')
@@ -17,6 +19,7 @@ def pricing_overview(request):
     return render(request, 'pricing/pricing_overview.html', context)
 
 
+@login_required
 def price_list_create(request):
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -31,6 +34,7 @@ def price_list_create(request):
     })
 
 
+@login_required
 def price_list_detail(request, pk):
     price_list = get_object_or_404(PriceList, pk=pk)
     items = price_list.items.select_related('product').all()
@@ -40,6 +44,7 @@ def price_list_detail(request, pk):
     })
 
 
+@login_required
 def add_price_list_item(request, pk):
     price_list = get_object_or_404(PriceList, pk=pk)
     if request.method == 'POST':

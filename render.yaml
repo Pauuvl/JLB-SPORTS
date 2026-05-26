@@ -11,3 +11,9 @@ services:
         value: "False"
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: "admin"
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false  # Lo ingresas manualmente en el dashboard de Render
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: "admin@jlbsports.com"
