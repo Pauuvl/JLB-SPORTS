@@ -27,7 +27,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Para archivos estáticos
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -56,7 +56,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'jlb_sports.wsgi.application'
 
-# Base de datos - SQLite por defecto, PostgreSQL si hay DATABASE_URL
+# Base de datos
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     import dj_database_url
@@ -81,7 +81,15 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'es-co'
 TIME_ZONE = 'America/Bogota'
 USE_I18N = True
-USE_TZ = True
+
+# ─── FIX CRÍTICO ────────────────────────────────────────────────────────────
+# USE_TZ = True causaba Server 500 en el admin porque el fixture cargó
+# datetimes "naive" (sin timezone) a PostgreSQL. Con USE_TZ = False Django
+# trabaja con datetimes locales directamente y el conflicto desaparece.
+# El TIME_ZONE = 'America/Bogota' de arriba sigue aplicando para mostrar
+# fechas correctas en la interfaz.
+USE_TZ = False
+# ────────────────────────────────────────────────────────────────────────────
 
 # Archivos estáticos con WhiteNoise
 STATIC_URL = '/static/'

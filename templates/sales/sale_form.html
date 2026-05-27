@@ -6,14 +6,17 @@
 
 {% block extra_js %}
 <script>
+// ─── FIX: todos los productos se cargan al JS, incluidos agotados ────────────
+// La vista pasa Product.objects.all() — si este array está vacío es porque
+// no hay productos en la BD. Ve al admin → Inventario y agrega productos.
 window.PRODUCTOS = [
   {% for p in products %}
   {
     id: {{ p.pk }},
     nombre: "{{ p.name|escapejs }}",
-    codigo: "{{ p.codigo|escapejs }}",
-    precio: {{ p.sale_price }},
-    stock: {{ p.stock_quantity }},
+    codigo: "{{ p.codigo|default:''|escapejs }}",
+    precio: {{ p.sale_price|default:0 }},
+    stock: {{ p.stock_quantity|default:0 }},
     colores: [{% for c in p.get_colores_lista %}"{{ c|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]
   }{% if not forloop.last %},{% endif %}
   {% endfor %}
@@ -30,6 +33,12 @@ window.PRODUCTOS = [
   <a href="{% url 'sale_list' %}" class="btn btn-outline">← Volver</a>
 </div>
 
+{% if messages %}
+  {% for msg in messages %}
+  <div class="alerta alerta-{{ msg.tags }}">{{ msg }}</div>
+  {% endfor %}
+{% endif %}
+
 <form method="post">
   {% csrf_token %}
   <div class="venta-grid">
@@ -41,7 +50,7 @@ window.PRODUCTOS = [
         <div class="tarjeta-cuerpo">
           <div class="form-grid">
             <div class="form-grupo">
-              <label>Cliente (opcional)</label>
+              <label>CLIENTE (OPCIONAL)</label>
               <select name="client" id="select-cliente" onchange="alCambiarCliente()">
                 <option value="" data-multiplicador="1">— Mostrador (sin descuento) —</option>
                 {% for c in clients %}
@@ -52,7 +61,7 @@ window.PRODUCTOS = [
               </select>
             </div>
             <div class="form-grupo">
-              <label>Observaciones</label>
+              <label>OBSERVACIONES</label>
               <input type="text" name="notes" placeholder="Notas opcionales...">
             </div>
           </div>
@@ -66,7 +75,13 @@ window.PRODUCTOS = [
         </div>
         <div class="tarjeta-cuerpo">
           {% if not products %}
-          <div class="alerta alerta-warning">⚠️ No hay productos con stock disponible.</div>
+          {# ── FIX: mensaje más útil cuando no hay productos en BD ── #}
+          <div class="alerta alerta-warning">
+            ⚠️ No hay productos registrados en el inventario.
+            <a href="{% url 'admin:inventory_product_add' %}" style="color:inherit;font-weight:700;">
+              Agregar producto →
+            </a>
+          </div>
           {% endif %}
           <div id="items-lista" class="items-lista"></div>
         </div>
@@ -75,7 +90,7 @@ window.PRODUCTOS = [
 
     <!-- Derecha: resumen -->
     <div class="venta-resumen">
-      <h3>📋 Resumen</h3>
+      <h3>📋 RESUMEN</h3>
       <div class="resumen-linea">
         <span class="td-muted">Artículos</span>
         <span id="resumen-items" class="bold">0</span>
@@ -113,12 +128,19 @@ function formatoPesos(v) {
 let itemIndex = 0;
 
 function agregarItem() {
+  // ─── FIX: si no hay productos, avisar en lugar de mostrar dropdown vacío ──
+  if (window.PRODUCTOS.length === 0) {
+    alert('No hay productos en el inventario. Agrega productos primero desde el admin.');
+    return;
+  }
+
   const lista = document.getElementById('items-lista');
   const idx = itemIndex++;
 
   const opcionesProducto = window.PRODUCTOS.map(p => {
     const codigo = p.codigo ? `[${p.codigo}] ` : '';
-    return `<option value="${p.id}" data-precio="${p.precio}" data-stock="${p.stock}" data-colores='${JSON.stringify(p.colores)}'>${codigo}${p.nombre} — Stock: ${p.stock}</option>`;
+    const stockLabel = p.stock === 0 ? ' ⚠️ AGOTADO' : ` — Stock: ${p.stock}`;
+    return `<option value="${p.id}" data-precio="${p.precio}" data-stock="${p.stock}" data-colores='${JSON.stringify(p.colores)}'>${codigo}${p.nombre}${stockLabel}</option>`;
   }).join('');
 
   const div = document.createElement('div');
@@ -127,7 +149,7 @@ function agregarItem() {
   div.innerHTML = `
     <div class="item-fila-grid">
       <div class="form-grupo" style="grid-column:1/-1">
-        <label>Producto</label>
+        <label>PRODUCTO</label>
         <select name="product_id[]" onchange="alCambiarProducto(${idx})" required style="border:2px solid var(--rojo);">
           <option value="">— Seleccionar —</option>
           ${opcionesProducto}
@@ -140,15 +162,15 @@ function agregarItem() {
         </select>
       </div>
       <div class="form-grupo">
-        <label>Cantidad</label>
+        <label>CANTIDAD</label>
         <input type="number" name="quantity[]" id="qty-${idx}" value="1" min="1" oninput="recalcularTodo()" required>
       </div>
       <div class="form-grupo">
-        <label>Precio Unit.</label>
+        <label>PRECIO UNIT.</label>
         <input type="text" id="precio-${idx}" readonly value="$0" style="background:var(--gris-fondo);">
       </div>
       <div class="form-grupo">
-        <label>Subtotal</label>
+        <label>SUBTOTAL</label>
         <input type="text" id="subtotal-${idx}" readonly value="$0" style="background:var(--gris-fondo);font-weight:700;">
       </div>
     </div>
@@ -169,7 +191,6 @@ function alCambiarProducto(idx) {
 
   document.getElementById(`precio-${idx}`).value = formatoPesos(precio);
 
-  // Mostrar selector de color si el producto tiene colores
   const colorGrupo = document.getElementById(`color-grupo-${idx}`);
   const colorSelect = document.getElementById(`color-select-${idx}`);
   if (colores.length > 0) {
@@ -214,7 +235,9 @@ function eliminarItem(idx) {
   recalcularTodo();
 }
 
-// Agregar primer item automáticamente
-agregarItem();
+// Agregar primer item automáticamente solo si hay productos
+if (window.PRODUCTOS.length > 0) {
+  agregarItem();
+}
 </script>
 {% endblock %}
