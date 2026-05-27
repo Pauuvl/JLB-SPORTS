@@ -33,7 +33,7 @@ def sale_list(request):
 
 @login_required
 def sale_create(request):
-    products = Product.objects.filter(stock_quantity__gt=0).select_related('category')
+    products = Product.objects.select_related('category').order_by('name')
     clients = Client.objects.all()
 
     if request.method == 'POST':

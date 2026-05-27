@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='product',
             name='codigo',
-            field=models.CharField(blank=True, default='', max_length=50, unique=True, verbose_name='Código'),
+            field=models.CharField(blank=True, default=None, max_length=50, null=True, unique=True, verbose_name='Código'),
             preserve_default=False,
         ),
         migrations.AddField(

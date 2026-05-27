@@ -141,7 +141,7 @@ def product_create(request):
     if request.method == 'POST':
 
         name = request.POST.get('name', '').strip()
-        codigo = request.POST.get('codigo', '').strip()
+        codigo = request.POST.get('codigo', '').strip() or None
         category_id = request.POST.get('category') or None
         marca = request.POST.get('marca', '').strip()
         talla = request.POST.get('talla', '').strip()
@@ -193,7 +193,7 @@ def product_edit(request, pk):
     if request.method == 'POST':
 
         product.name = request.POST.get('name', '').strip()
-        product.codigo = request.POST.get('codigo', '').strip()
+        product.codigo = request.POST.get('codigo', '').strip() or None
         product.category_id = request.POST.get('category') or None
         product.marca = request.POST.get('marca', '').strip()
         product.talla = request.POST.get('talla', '').strip()

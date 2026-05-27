@@ -14,8 +14,9 @@ class Product(models.Model):
     codigo = models.CharField(
         max_length=50,
         unique=True,
+        null=True,
         blank=True,
-        default='',
+        default=None,
         verbose_name='Código'
     )
 
