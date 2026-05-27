@@ -4,133 +4,192 @@
 {% block title %}Nueva Venta — JLB Sports{% endblock %}
 {% block topbar_title %}Registrar Venta{% endblock %}
 
-{% block extra_js %}
-<script>
-// ─── FIX: todos los productos se cargan al JS, incluidos agotados ────────────
-// La vista pasa Product.objects.all() — si este array está vacío es porque
-// no hay productos en la BD. Ve al admin → Inventario y agrega productos.
-window.PRODUCTOS = [
-  {% for p in products %}
-  {
-    id: {{ p.pk }},
-    nombre: "{{ p.name|escapejs }}",
-    codigo: "{{ p.codigo|default:''|escapejs }}",
-    precio: {{ p.sale_price|default:0 }},
-    stock: {{ p.stock_quantity|default:0 }},
-    colores: [{% for c in p.get_colores_lista %}"{{ c|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]
-  }{% if not forloop.last %},{% endif %}
-  {% endfor %}
-];
-</script>
-{% endblock %}
-
 {% block content %}
 <div class="seccion-header">
   <div>
     <h1 class="seccion-titulo">Registrar Nueva Venta</h1>
     <p class="seccion-subtitulo">El stock se descuenta automáticamente al confirmar</p>
   </div>
-  <a href="{% url 'sale_list' %}" class="btn btn-outline">← Volver</a>
-</div>
 
-{% if messages %}
-  {% for msg in messages %}
-  <div class="alerta alerta-{{ msg.tags }}">{{ msg }}</div>
-  {% endfor %}
-{% endif %}
+  <a href="{% url 'sale_list' %}" class="btn btn-outline">
+    ← Volver
+  </a>
+</div>
 
 <form method="post">
   {% csrf_token %}
+
   <div class="venta-grid">
 
-    <!-- Izquierda: cliente y productos -->
+    <!-- IZQUIERDA -->
     <div>
+
+      <!-- CLIENTE -->
       <div class="tarjeta mb-2">
-        <div class="tarjeta-cab"><span class="tarjeta-titulo">👤 Cliente</span></div>
+        <div class="tarjeta-cab">
+          <span class="tarjeta-titulo">👤 Cliente</span>
+        </div>
+
         <div class="tarjeta-cuerpo">
+
           <div class="form-grid">
+
             <div class="form-grupo">
               <label>CLIENTE (OPCIONAL)</label>
-              <select name="client" id="select-cliente" onchange="alCambiarCliente()">
-                <option value="" data-multiplicador="1">— Mostrador (sin descuento) —</option>
+
+              <select 
+                name="client" 
+                id="select-cliente" 
+                onchange="alCambiarCliente()"
+              >
+
+                <option value="" data-multiplicador="1">
+                  — Mostrador (sin descuento) —
+                </option>
+
                 {% for c in clients %}
-                <option value="{{ c.pk }}" data-multiplicador="{{ c.price_multiplier }}">
-                  {{ c.name }} — {{ c.get_client_type_display }}{% if c.discount_percent %} ({{ c.discount_percent }}% desc.){% endif %}
+                <option 
+                  value="{{ c.pk }}" 
+                  data-multiplicador="{{ c.price_multiplier }}"
+                >
+                  {{ c.name }} — {{ c.get_client_type_display }}
+
+                  {% if c.discount_percent %}
+                    ({{ c.discount_percent }}% desc.)
+                  {% endif %}
+
                 </option>
                 {% endfor %}
+
               </select>
             </div>
+
             <div class="form-grupo">
               <label>OBSERVACIONES</label>
-              <input type="text" name="notes" placeholder="Notas opcionales...">
+
+              <input 
+                type="text" 
+                name="notes" 
+                placeholder="Notas opcionales..."
+              >
             </div>
+
           </div>
+
         </div>
       </div>
 
+      <!-- PRODUCTOS -->
       <div class="tarjeta">
+
         <div class="tarjeta-cab">
           <span class="tarjeta-titulo">📦 Productos</span>
-          <button type="button" class="btn btn-outline btn-sm" onclick="agregarItem()">+ Agregar</button>
+
+          <button 
+            type="button" 
+            class="btn btn-outline btn-sm" 
+            onclick="agregarItem()"
+          >
+            + Agregar
+          </button>
         </div>
+
         <div class="tarjeta-cuerpo">
+
           {% if not products %}
-          {# ── FIX: mensaje más útil cuando no hay productos en BD ── #}
           <div class="alerta alerta-warning">
             ⚠️ No hay productos registrados en el inventario.
-            <a href="{% url 'admin:inventory_product_add' %}" style="color:inherit;font-weight:700;">
-              Agregar producto →
-            </a>
           </div>
           {% endif %}
+
           <div id="items-lista" class="items-lista"></div>
+
         </div>
       </div>
+
     </div>
 
-    <!-- Derecha: resumen -->
+    <!-- DERECHA -->
     <div class="venta-resumen">
+
       <h3>📋 RESUMEN</h3>
+
       <div class="resumen-linea">
         <span class="td-muted">Artículos</span>
         <span id="resumen-items" class="bold">0</span>
       </div>
-      <div class="resumen-linea" style="margin-top:8px;padding-top:12px;border-top:2px solid var(--gris-borde);">
-        <span class="bold" style="font-size:0.9rem;">TOTAL</span>
-        <span class="resumen-total-valor" id="resumen-total">$0</span>
+
+      <div 
+        class="resumen-linea" 
+        style="margin-top:8px;padding-top:12px;border-top:2px solid var(--gris-borde);"
+      >
+        <span class="bold" style="font-size:0.9rem;">
+          TOTAL
+        </span>
+
+        <span class="resumen-total-valor" id="resumen-total">
+          $0
+        </span>
       </div>
 
-      <button type="submit" class="btn btn-rojo btn-lg btn-bloque mt-2">
+      <button 
+        type="submit" 
+        class="btn btn-rojo btn-lg btn-bloque mt-2"
+      >
         💳 Confirmar Venta
       </button>
-      <a href="{% url 'sale_list' %}" class="btn btn-outline btn-bloque mt-1">Cancelar</a>
 
-      <div class="alerta alerta-warning mt-2" style="font-size:0.78rem;padding:9px 12px;">
+      <a 
+        href="{% url 'sale_list' %}" 
+        class="btn btn-outline btn-bloque mt-1"
+      >
+        Cancelar
+      </a>
+
+      <div 
+        class="alerta alerta-warning mt-2" 
+        style="font-size:0.78rem;padding:9px 12px;"
+      >
         ⚠️ El stock se descuenta de forma inmediata al confirmar.
       </div>
+
     </div>
+
   </div>
 </form>
 
+<!-- PRODUCTOS -->
 <script>
+window.PRODUCTOS = {{ products_json|safe }};
+</script>
+
+<script>
+
 let multiplicadorCliente = 1;
+let itemIndex = 0;
 
 function alCambiarCliente() {
+
   const sel = document.getElementById('select-cliente');
-  multiplicadorCliente = parseFloat(sel.selectedOptions[0].dataset.multiplicador) || 1;
+
+  multiplicadorCliente =
+    parseFloat(sel.selectedOptions[0].dataset.multiplicador) || 1;
+
   recalcularTodo();
 }
 
 function formatoPesos(v) {
-  return '$' + Math.round(v).toLocaleString('es-CO').replace(/,/g, '.');
+
+  return '$' + Math.round(v)
+    .toLocaleString('es-CO')
+    .replace(/,/g, '.');
 }
 
-let itemIndex = 0;
-
 function agregarItem() {
-  // ─── FIX: si no hay productos, avisar en lugar de mostrar dropdown vacío ──
+
   if (window.PRODUCTOS.length === 0) {
-    alert('No hay productos en el inventario. Agrega productos primero desde el admin.');
+
+    alert('No hay productos en el inventario.');
     return;
   }
 
@@ -138,106 +197,204 @@ function agregarItem() {
   const idx = itemIndex++;
 
   const opcionesProducto = window.PRODUCTOS.map(p => {
-    const codigo = p.codigo ? `[${p.codigo}] ` : '';
-    const stockLabel = p.stock === 0 ? ' ⚠️ AGOTADO' : ` — Stock: ${p.stock}`;
-    return `<option value="${p.id}" data-precio="${p.precio}" data-stock="${p.stock}" data-colores='${JSON.stringify(p.colores)}'>${codigo}${p.nombre}${stockLabel}</option>`;
+
+    const stockLabel =
+      p.stock_quantity === 0
+        ? ' ⚠️ AGOTADO'
+        : ` — Stock: ${p.stock_quantity}`;
+
+    return `
+      <option
+        value="${p.id}"
+        data-precio="${p.sale_price}"
+        data-stock="${p.stock_quantity}"
+        data-colores='[]'
+      >
+        ${p.name}${stockLabel}
+      </option>
+    `;
+
   }).join('');
 
   const div = document.createElement('div');
+
   div.className = 'item-fila';
   div.id = `item-${idx}`;
+
   div.innerHTML = `
+
     <div class="item-fila-grid">
+
       <div class="form-grupo" style="grid-column:1/-1">
+
         <label>PRODUCTO</label>
-        <select name="product_id[]" onchange="alCambiarProducto(${idx})" required style="border:2px solid var(--rojo);">
+
+        <select
+          name="product_id[]"
+          onchange="alCambiarProducto(${idx})"
+          required
+          style="border:2px solid var(--rojo);"
+        >
+
           <option value="">— Seleccionar —</option>
+
           ${opcionesProducto}
+
         </select>
+
       </div>
-      <div class="form-grupo" id="color-grupo-${idx}" style="display:none;grid-column:1/-1">
+
+      <div
+        class="form-grupo"
+        id="color-grupo-${idx}"
+        style="display:none;grid-column:1/-1"
+      >
+
         <label>Color</label>
-        <select name="color_vendido[]" id="color-select-${idx}">
+
+        <select
+          name="color_vendido[]"
+          id="color-select-${idx}"
+        >
           <option value="">— Sin especificar —</option>
         </select>
+
       </div>
+
       <div class="form-grupo">
+
         <label>CANTIDAD</label>
-        <input type="number" name="quantity[]" id="qty-${idx}" value="1" min="1" oninput="recalcularTodo()" required>
+
+        <input
+          type="number"
+          name="quantity[]"
+          id="qty-${idx}"
+          value="1"
+          min="1"
+          oninput="recalcularTodo()"
+          required
+        >
+
       </div>
+
       <div class="form-grupo">
+
         <label>PRECIO UNIT.</label>
-        <input type="text" id="precio-${idx}" readonly value="$0" style="background:var(--gris-fondo);">
+
+        <input
+          type="text"
+          id="precio-${idx}"
+          readonly
+          value="$0"
+          style="background:var(--gris-fondo);"
+        >
+
       </div>
+
       <div class="form-grupo">
+
         <label>SUBTOTAL</label>
-        <input type="text" id="subtotal-${idx}" readonly value="$0" style="background:var(--gris-fondo);font-weight:700;">
+
+        <input
+          type="text"
+          id="subtotal-${idx}"
+          readonly
+          value="$0"
+          style="background:var(--gris-fondo);font-weight:700;"
+        >
+
       </div>
+
     </div>
-    <button type="button" onclick="eliminarItem(${idx})" style="margin-top:8px;background:none;border:none;color:var(--rojo);cursor:pointer;font-size:0.85rem;">✕ Quitar</button>
+
+    <button
+      type="button"
+      onclick="eliminarItem(${idx})"
+      style="margin-top:8px;background:none;border:none;color:var(--rojo);cursor:pointer;font-size:0.85rem;"
+    >
+      ✕ Quitar
+    </button>
+
     <hr style="margin:14px 0;border-color:var(--gris-borde);">
+
   `;
+
   lista.appendChild(div);
+
   recalcularTodo();
 }
 
 function alCambiarProducto(idx) {
-  const sel = document.querySelector(`#item-${idx} select[name="product_id[]"]`);
+
+  const sel = document.querySelector(
+    `#item-${idx} select[name="product_id[]"]`
+  );
+
   const opt = sel.selectedOptions[0];
+
   if (!opt || !opt.value) return;
 
-  const precio = parseFloat(opt.dataset.precio) * multiplicadorCliente;
-  const colores = JSON.parse(opt.dataset.colores || '[]');
+  const precio =
+    parseFloat(opt.dataset.precio) * multiplicadorCliente;
 
-  document.getElementById(`precio-${idx}`).value = formatoPesos(precio);
-
-  const colorGrupo = document.getElementById(`color-grupo-${idx}`);
-  const colorSelect = document.getElementById(`color-select-${idx}`);
-  if (colores.length > 0) {
-    colorSelect.innerHTML = '<option value="">— Sin especificar —</option>' +
-      colores.map(c => `<option value="${c}">${c}</option>`).join('');
-    colorGrupo.style.display = 'block';
-  } else {
-    colorSelect.innerHTML = '<option value="">— Sin especificar —</option>';
-    colorGrupo.style.display = 'none';
-  }
+  document.getElementById(`precio-${idx}`).value =
+    formatoPesos(precio);
 
   recalcularTodo();
 }
 
 function recalcularTodo() {
+
   let total = 0;
   let totalItems = 0;
 
   document.querySelectorAll('.item-fila').forEach(fila => {
+
     const idx = fila.id.replace('item-', '');
-    const sel = fila.querySelector('select[name="product_id[]"]');
+
+    const sel = fila.querySelector(
+      'select[name="product_id[]"]'
+    );
+
     const opt = sel?.selectedOptions[0];
+
     if (!opt || !opt.value) return;
 
-    const precio = parseFloat(opt.dataset.precio) * multiplicadorCliente;
-    const qty = parseInt(document.getElementById(`qty-${idx}`)?.value) || 1;
+    const precio =
+      parseFloat(opt.dataset.precio) * multiplicadorCliente;
+
+    const qty =
+      parseInt(document.getElementById(`qty-${idx}`)?.value) || 1;
+
     const subtotal = precio * qty;
 
-    document.getElementById(`precio-${idx}`).value = formatoPesos(precio);
-    document.getElementById(`subtotal-${idx}`).value = formatoPesos(subtotal);
+    document.getElementById(`precio-${idx}`).value =
+      formatoPesos(precio);
+
+    document.getElementById(`subtotal-${idx}`).value =
+      formatoPesos(subtotal);
 
     total += subtotal;
     totalItems += qty;
+
   });
 
-  document.getElementById('resumen-total').textContent = formatoPesos(total);
-  document.getElementById('resumen-items').textContent = totalItems;
+  document.getElementById('resumen-total').textContent =
+    formatoPesos(total);
+
+  document.getElementById('resumen-items').textContent =
+    totalItems;
 }
 
 function eliminarItem(idx) {
+
   document.getElementById(`item-${idx}`)?.remove();
+
   recalcularTodo();
 }
 
-// Agregar primer item automáticamente solo si hay productos
-if (window.PRODUCTOS.length > 0) {
-  agregarItem();
-}
+agregarItem();
+
 </script>
+
 {% endblock %}

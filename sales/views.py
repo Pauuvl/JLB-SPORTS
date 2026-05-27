@@ -1,3 +1,4 @@
+import json
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
@@ -16,6 +17,21 @@ def _fmt_pesos(value):
         return f"${val:,}".replace(",", ".")
     except Exception:
         return f"${value}"
+
+
+def _build_products_json(products):
+    """Convierte el queryset de productos a JSON seguro para el template."""
+    data = []
+    for p in products:
+        data.append({
+            'id': p.pk,
+            'nombre': p.name,
+            'codigo': p.codigo or '',
+            'precio': float(p.sale_price),   # float es JSON-serializable, Decimal no
+            'stock': p.stock_quantity,
+            'colores': p.get_colores_lista(),
+        })
+    return json.dumps(data, ensure_ascii=False)
 
 
 @login_required
@@ -46,7 +62,10 @@ def sale_create(request):
         if not product_ids:
             messages.error(request, 'Debe agregar al menos un producto a la venta.')
             return render(request, 'sales/sale_form.html', {
-                'products': products, 'clients': clients, 'active_page': 'sales'
+                'products': products,
+                'clients': clients,
+                'products_json': _build_products_json(products),
+                'active_page': 'sales',
             })
 
         client = Client.objects.get(pk=client_id) if client_id else None
@@ -95,7 +114,10 @@ def sale_create(request):
             messages.error(request, 'Uno de los productos seleccionados no fue encontrado.')
 
     return render(request, 'sales/sale_form.html', {
-        'products': products, 'clients': clients, 'active_page': 'sales'
+        'products': products,
+        'clients': clients,
+        'products_json': _build_products_json(products),  # JSON limpio, sin Decimal
+        'active_page': 'sales',
     })
 
 
