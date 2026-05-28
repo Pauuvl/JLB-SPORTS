@@ -33,7 +33,29 @@
 .item-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
 .item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .item-num { background: var(--rojo); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; flex-shrink: 0; }
-.color-selector-wrap { margin-top: 8px; display: none; }
+.color-selector-wrap {
+  margin-top: 10px;
+  display: none;
+  background: linear-gradient(135deg, #fff7ed, #fff);
+  border: 2px dashed #f97316;
+  border-radius: var(--radio-sm);
+  padding: 10px 14px;
+}
+.color-selector-wrap label {
+  color: #ea580c;
+  font-weight: 700;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.color-selector-wrap label::before { content: "🎨"; }
+.color-selector-wrap select {
+  border-color: #f97316;
+  background: white;
+  font-weight: 600;
+}
+.color-selector-wrap select:focus { border-color: #ea580c; box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
 .color-stock-info { font-size: 0.75rem; color: var(--gris-texto); margin-top: 4px; }
 .stock-badge {
   display: inline-flex; align-items: center; gap: 4px;

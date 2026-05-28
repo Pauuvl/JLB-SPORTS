@@ -193,97 +193,144 @@ def generate_sale_pdf(sale):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.units import cm
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle,
+                                    Paragraph, Spacer, HRFlowable, Image,
+                                    KeepTogether)
+    from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
-    from reportlab.pdfgen import canvas
     import io
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4,
-                            rightMargin=2*cm, leftMargin=2*cm,
-                            topMargin=2*cm, bottomMargin=2*cm)
+                            rightMargin=1.8*cm, leftMargin=1.8*cm,
+                            topMargin=1.8*cm, bottomMargin=1.8*cm)
 
-    styles = getSampleStyleSheet()
-    rojo = colors.HexColor('#DC2626')
-    negro = colors.HexColor('#111111')
-    gris = colors.HexColor('#6B7280')
-    gris_fondo = colors.HexColor('#F3F4F6')
+    # ── Paleta ────────────────────────────────────────────────────────────────
+    ROJO       = colors.HexColor('#DC2626')
+    ROJO_OSC   = colors.HexColor('#991B1B')
+    NEGRO      = colors.HexColor('#111111')
+    GRIS       = colors.HexColor('#6B7280')
+    GRIS_FONDO = colors.HexColor('#F3F4F6')
+    GRIS_BORDE = colors.HexColor('#E5E7EB')
+    ROJO_LIGHT = colors.HexColor('#FEF2F2')
+    BLANCO     = colors.white
 
-    title_style = ParagraphStyle('title', fontSize=22, textColor=colors.white,
-                                  fontName='Helvetica-Bold', alignment=TA_CENTER)
-    sub_style = ParagraphStyle('sub', fontSize=9, textColor=colors.white,
-                                fontName='Helvetica', alignment=TA_CENTER)
-    heading_style = ParagraphStyle('heading', fontSize=11, textColor=negro,
-                                    fontName='Helvetica-Bold')
-    normal_style = ParagraphStyle('normal', fontSize=9, textColor=gris, fontName='Helvetica')
-    right_style = ParagraphStyle('right', fontSize=9, textColor=gris, fontName='Helvetica',
-                                  alignment=TA_RIGHT)
-    total_style = ParagraphStyle('total', fontSize=16, textColor=rojo,
-                                  fontName='Helvetica-Bold', alignment=TA_RIGHT)
+    # ── Estilos ───────────────────────────────────────────────────────────────
+    s_sub    = ParagraphStyle('sub',    fontSize=8,  textColor=BLANCO,  fontName='Helvetica',      alignment=TA_RIGHT)
+    s_normal = ParagraphStyle('norm',   fontSize=9,  textColor=GRIS,    fontName='Helvetica')
+    s_bold   = ParagraphStyle('bold',   fontSize=9,  textColor=NEGRO,   fontName='Helvetica-Bold')
+    s_footer = ParagraphStyle('footer', fontSize=7,  textColor=GRIS,    fontName='Helvetica',      alignment=TA_CENTER)
+    s_label  = ParagraphStyle('label',  fontSize=7,  textColor=GRIS,    fontName='Helvetica-Bold', spaceAfter=1)
+    s_value  = ParagraphStyle('value',  fontSize=9,  textColor=NEGRO,   fontName='Helvetica')
+    s_total  = ParagraphStyle('total',  fontSize=15, textColor=ROJO,    fontName='Helvetica-Bold', alignment=TA_RIGHT)
 
+    W = 17.4 * cm  # ancho útil (A4 - márgenes)
     elements = []
 
-    # Header banner
-    logo_path = os.path.join(os.path.dirname(__file__), '..', 'static', 'imagenes', 'logo.png')
-
-    header_data = [[
-        Paragraph('<font color="white"><b>JLB SPORTS</b></font><br/><font size="8" color="#fecaca">Sistema de Gestión Comercial</font>', title_style),
-        Paragraph(f'<font color="white"><b>FACTURA #{sale.pk}</b></font><br/><font size="8" color="#fecaca">{sale.created_at.strftime("%d/%m/%Y %H:%M")}</font>', sub_style),
-    ]]
-    header_table = Table(header_data, colWidths=[11*cm, 6*cm])
-    header_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), rojo),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('TOPPADDING', (0, 0), (-1, -1), 16),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 16),
-        ('LEFTPADDING', (0, 0), (0, -1), 18),
-        ('RIGHTPADDING', (-1, 0), (-1, -1), 18),
-        ('ROUNDEDCORNERS', [8, 8, 8, 8]),
-    ]))
-    elements.append(header_table)
-    elements.append(Spacer(1, 0.5*cm))
-
-    # Client info
-    client = sale.client
-    client_info = []
-    if client:
-        client_info.append(['Cliente:', client.name])
-        if client.cedula:
-            client_info.append(['Cédula / NIT:', client.cedula])
-        if client.phone:
-            client_info.append(['Teléfono:', client.phone])
-        if client.email:
-            client_info.append(['Correo:', client.email])
-        if client.address:
-            client_info.append(['Dirección:', client.address])
-        if client.municipio:
-            client_info.append(['Municipio:', client.municipio])
+    # ═══════════════════════════════════════════════════════════════════════════
+    # HEADER: logo izq | info factura der
+    # ═══════════════════════════════════════════════════════════════════════════
+    logo_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..', 'static', 'imagenes', 'logo_blanco.png')
+    )
+    if os.path.exists(logo_path):
+        logo_cell = Image(logo_path, width=5.5*cm, height=1.7*cm)
     else:
-        client_info.append(['Cliente:', 'Venta Mostrador'])
+        logo_cell = Paragraph('<font color="white" size="16"><b>JLB SPORTS</b></font>', s_sub)
 
-    client_table = Table(client_info, colWidths=[4*cm, 13*cm])
-    client_table.setStyle(TableStyle([
-        ('FONT', (0, 0), (0, -1), 'Helvetica-Bold', 9),
-        ('FONT', (1, 0), (1, -1), 'Helvetica', 9),
-        ('TEXTCOLOR', (0, 0), (0, -1), negro),
-        ('TEXTCOLOR', (1, 0), (1, -1), gris),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('BACKGROUND', (0, 0), (-1, -1), gris_fondo),
-        ('ROUNDEDCORNERS', [6, 6, 6, 6]),
-        ('LEFTPADDING', (0, 0), (-1, -1), 12),
+    estado_color = '#16a34a' if sale.status == 'completed' else '#dc2626'
+    estado_txt   = sale.get_status_display() if hasattr(sale, 'get_status_display') else sale.status.upper()
+
+    info_cell = Paragraph(
+        f'<font size="14" color="white"><b>FACTURA #{sale.pk}</b></font><br/>'
+        f'<font size="8" color="#fca5a5">{sale.created_at.strftime("%d/%m/%Y  %H:%M")}  ·  '
+        f'<b>{estado_txt}</b></font>',
+        s_sub
+    )
+
+    hdr = Table([[logo_cell, info_cell]], colWidths=[10*cm, 7.4*cm])
+    hdr.setStyle(TableStyle([
+        ('BACKGROUND',    (0, 0), (-1, -1), NEGRO),
+        ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING',    (0, 0), (-1, -1), 14),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 14),
+        ('LEFTPADDING',   (0, 0), (0,  -1), 16),
+        ('RIGHTPADDING',  (-1, 0), (-1, -1), 16),
+        ('LINEBELOW',     (0, 0), (-1, -1), 3, ROJO),
     ]))
-    elements.append(client_table)
-    elements.append(Spacer(1, 0.4*cm))
+    elements.append(hdr)
+    elements.append(Spacer(1, 0.45*cm))
 
-    # Items table
-    items_data = [['Código', 'Producto', 'Color', 'Cant.', 'Precio Unit.', 'Subtotal']]
+    # ═══════════════════════════════════════════════════════════════════════════
+    # INFO BLOQUE: datos cliente + datos venta lado a lado
+    # ═══════════════════════════════════════════════════════════════════════════
+    client = sale.client
+
+    def info_block(label, value):
+        return [Paragraph(label.upper(), s_label), Paragraph(str(value) if value else '—', s_value)]
+
+    # columna izquierda: cliente
+    if client:
+        cli_rows = [
+            info_block('Cliente', client.name),
+            info_block('Cédula / NIT', client.cedula or None),
+            info_block('Teléfono', client.phone or None),
+            info_block('Municipio', client.municipio or None),
+        ]
+        cli_rows = [r for r in cli_rows if r[1].text != '—' or r[0].text == 'CLIENTE']
+    else:
+        cli_rows = [info_block('Cliente', 'Venta Mostrador')]
+
+    # columna derecha: datos venta
+    venta_rows = [
+        info_block('Fecha', sale.created_at.strftime('%d/%m/%Y')),
+        info_block('Hora', sale.created_at.strftime('%H:%M')),
+        info_block('Vendedor', sale.created_by.get_full_name() if hasattr(sale, 'created_by') and sale.created_by else '—'),
+    ]
+
+    # Renderizar como tabla de 2 columnas
+    def flatten_pairs(rows):
+        result = []
+        for pair in rows:
+            result.append(pair)
+        return result
+
+    cli_flat  = flatten_pairs(cli_rows)
+    venta_flat = flatten_pairs(venta_rows)
+
+    # Igualar filas
+    while len(cli_flat) < len(venta_flat):
+        cli_flat.append([Paragraph('', s_label), Paragraph('', s_value)])
+    while len(venta_flat) < len(cli_flat):
+        venta_flat.append([Paragraph('', s_label), Paragraph('', s_value)])
+
+    info_rows = [[cli_flat[i][0], cli_flat[i][1], venta_flat[i][0], venta_flat[i][1]]
+                 for i in range(len(cli_flat))]
+
+    info_tbl = Table(info_rows, colWidths=[2.8*cm, 6*cm, 2.8*cm, 5.8*cm])
+    info_tbl.setStyle(TableStyle([
+        ('BACKGROUND',    (0, 0), (-1, -1), GRIS_FONDO),
+        ('TOPPADDING',    (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 8),
+        ('LINEAFTER',     (1, 0), (1, -1), 0.5, GRIS_BORDE),
+        ('VALIGN',        (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(info_tbl)
+    elements.append(Spacer(1, 0.45*cm))
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # TABLA DE PRODUCTOS
+    # ═══════════════════════════════════════════════════════════════════════════
+    col_headers = ['#', 'Código', 'Producto', 'Color', 'Cant.', 'Precio Unit.', 'Subtotal']
+    rows = [col_headers]
     subtotal_sum = Decimal('0')
-    for item in sale.items.all():
+
+    for i, item in enumerate(sale.items.all(), 1):
         subtotal_sum += item.subtotal
-        items_data.append([
+        rows.append([
+            str(i),
             item.product.codigo or '—',
             item.product.name,
             item.color_vendido or '—',
@@ -292,63 +339,77 @@ def generate_sale_pdf(sale):
             f'${int(item.subtotal):,}'.replace(',', '.'),
         ])
 
-    items_table = Table(items_data, colWidths=[2.5*cm, 6*cm, 2.5*cm, 1.5*cm, 2.5*cm, 2*cm])
-    items_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), negro),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('FONT', (0, 0), (-1, 0), 'Helvetica-Bold', 8),
-        ('FONT', (0, 1), (-1, -1), 'Helvetica', 8),
-        ('TEXTCOLOR', (0, 1), (-1, -1), negro),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, gris_fondo]),
-        ('ALIGN', (3, 0), (-1, -1), 'RIGHT'),
-        ('TOPPADDING', (0, 0), (-1, -1), 7),
+    col_w = [0.7*cm, 2.2*cm, 5.8*cm, 2.3*cm, 1.3*cm, 2.6*cm, 2.5*cm]
+    prod_tbl = Table(rows, colWidths=col_w, repeatRows=1)
+    prod_tbl.setStyle(TableStyle([
+        # encabezado
+        ('BACKGROUND',    (0, 0), (-1, 0), NEGRO),
+        ('TEXTCOLOR',     (0, 0), (-1, 0), BLANCO),
+        ('FONT',          (0, 0), (-1, 0), 'Helvetica-Bold', 8),
+        ('LINEBELOW',     (0, 0), (-1, 0), 2, ROJO),
+        # filas
+        ('FONT',          (0, 1), (-1, -1), 'Helvetica', 8),
+        ('TEXTCOLOR',     (0, 1), (-1, -1), NEGRO),
+        ('ROWBACKGROUNDS',(0, 1), (-1, -1), [BLANCO, GRIS_FONDO]),
+        # alineaciones
+        ('ALIGN',         (0, 0), (0, -1), 'CENTER'),
+        ('ALIGN',         (4, 0), (-1, -1), 'RIGHT'),
+        # padding
+        ('TOPPADDING',    (0, 0), (-1, -1), 7),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
-        ('LEFTPADDING', (0, 0), (-1, -1), 8),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-        ('LINEBELOW', (0, 0), (-1, 0), 0.5, rojo),
-        ('LINEBELOW', (0, -1), (-1, -1), 0.5, colors.HexColor('#E5E7EB')),
+        ('LEFTPADDING',   (0, 0), (-1, -1), 7),
+        ('RIGHTPADDING',  (0, 0), (-1, -1), 7),
+        # borde inferior total
+        ('LINEBELOW',     (0, -1), (-1, -1), 0.5, GRIS_BORDE),
     ]))
-    elements.append(items_table)
+    elements.append(prod_tbl)
     elements.append(Spacer(1, 0.3*cm))
 
-    # Totals
-    totals_data = []
-    totals_data.append(['Subtotal:', f'${int(subtotal_sum):,}'.replace(',', '.')])
+    # ═══════════════════════════════════════════════════════════════════════════
+    # TOTALES
+    # ═══════════════════════════════════════════════════════════════════════════
+    totals = []
+    totals.append(['Subtotal:', f'${int(subtotal_sum):,}'.replace(',', '.')])
     if sale.discount_applied:
-        totals_data.append([f'Descuento ({sale.discount_applied}%):', f'-${int(subtotal_sum - sale.total_amount):,}'.replace(',', '.')])
-    totals_data.append(['TOTAL:', f'${int(sale.total_amount):,}'.replace(',', '.')])
+        desc_monto = subtotal_sum - sale.total_amount
+        totals.append([f'Descuento ({sale.discount_applied}%):', f'-${int(desc_monto):,}'.replace(',', '.')])
+    totals.append(['TOTAL A PAGAR:', f'${int(sale.total_amount):,}'.replace(',', '.')])
 
-    totals_table = Table(totals_data, colWidths=[13.5*cm, 3.5*cm])
-    ts = [
-        ('FONT', (0, 0), (-1, -2), 'Helvetica', 9),
-        ('FONT', (-1, 0), (-1, -2), 'Helvetica', 9),
-        ('FONT', (0, -1), (-1, -1), 'Helvetica-Bold', 13),
-        ('TEXTCOLOR', (0, 0), (-1, -2), gris),
-        ('TEXTCOLOR', (0, -1), (0, -1), negro),
-        ('TEXTCOLOR', (-1, -1), (-1, -1), rojo),
-        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
+    tot_tbl = Table(totals, colWidths=[13.9*cm, 3.5*cm])
+    tot_tbl.setStyle(TableStyle([
+        ('FONT',          (0, 0), (-1, -2), 'Helvetica', 9),
+        ('FONT',          (0, -1), (-1, -1), 'Helvetica-Bold', 13),
+        ('TEXTCOLOR',     (0, 0), (-1, -2), GRIS),
+        ('TEXTCOLOR',     (0, -1), (0, -1), NEGRO),
+        ('TEXTCOLOR',     (-1, -1), (-1, -1), ROJO),
+        ('ALIGN',         (0, 0), (-1, -1), 'RIGHT'),
+        ('TOPPADDING',    (0, 0), (-1, -1), 5),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#FEF2F2')),
-        ('LINEABOVE', (0, -1), (-1, -1), 1.5, rojo),
-        ('RIGHTPADDING', (-1, 0), (-1, -1), 0),
-    ]
-    totals_table.setStyle(TableStyle(ts))
-    elements.append(totals_table)
+        ('BACKGROUND',    (0, -1), (-1, -1), ROJO_LIGHT),
+        ('LINEABOVE',     (0, -1), (-1, -1), 2, ROJO),
+        ('RIGHTPADDING',  (-1, 0), (-1, -1), 0),
+    ]))
+    elements.append(KeepTogether([tot_tbl]))
 
-    # Notes
+    # ═══════════════════════════════════════════════════════════════════════════
+    # OBSERVACIONES
+    # ═══════════════════════════════════════════════════════════════════════════
     if sale.notes:
         elements.append(Spacer(1, 0.4*cm))
-        elements.append(HRFlowable(width='100%', thickness=0.5, color=colors.HexColor('#E5E7EB')))
+        elements.append(HRFlowable(width='100%', thickness=0.5, color=GRIS_BORDE))
         elements.append(Spacer(1, 0.2*cm))
-        elements.append(Paragraph(f'<b>Observaciones:</b> {sale.notes}', normal_style))
+        elements.append(Paragraph(f'<b>Observaciones:</b> {sale.notes}', s_normal))
 
-    # Footer
-    elements.append(Spacer(1, 0.8*cm))
-    elements.append(HRFlowable(width='100%', thickness=0.5, color=rojo))
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FOOTER
+    # ═══════════════════════════════════════════════════════════════════════════
+    elements.append(Spacer(1, 0.7*cm))
+    elements.append(HRFlowable(width='100%', thickness=1, color=ROJO))
     elements.append(Spacer(1, 0.2*cm))
-    footer_style = ParagraphStyle('footer', fontSize=7.5, textColor=gris, alignment=TA_CENTER)
-    elements.append(Paragraph('JLB Sports — Sistema de Gestión Comercial · Gracias por su compra', footer_style))
+    elements.append(Paragraph(
+        'JLB Sports  ·  Sistema de Gestión Comercial  ·  ¡Gracias por su compra!',
+        s_footer
+    ))
 
     doc.build(elements)
     return buffer.getvalue()
