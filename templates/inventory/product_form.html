@@ -105,8 +105,7 @@
           </div>
         </div>
         <div id="preview-precios" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;background:var(--gris-fondo);border:1px solid var(--gris-borde);border-radius:var(--radio-sm);padding:14px 20px;margin-top:14px;">
-          {% for label, id in "Costo|prev-costo,Precio Venta|prev-venta,Ganancia|prev-ganancia,Margen %|prev-margen"|split:"," %}
-          {% endfor %}
+          
           <div><div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Costo</div><div id="prev-costo" style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;">$0</div></div>
           <div><div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Precio Venta</div><div id="prev-venta" style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;">$0</div></div>
           <div><div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Ganancia Unit.</div><div id="prev-ganancia" style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;">$0</div></div>
