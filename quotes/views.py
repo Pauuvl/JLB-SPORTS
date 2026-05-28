@@ -134,10 +134,11 @@ def generate_quote_pdf(quote):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.units import cm
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable, Image
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
     import io
+    import os
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4,
@@ -148,34 +149,45 @@ def generate_quote_pdf(quote):
     negro = colors.HexColor('#111111')
     gris = colors.HexColor('#6B7280')
     gris_fondo = colors.HexColor('#F3F4F6')
-    azul = colors.HexColor('#1D4ED8')
+    rojo_fondo = colors.HexColor('#FEF2F2')
 
-    title_style = ParagraphStyle('title', fontSize=20, textColor=colors.white,
-                                  fontName='Helvetica-Bold', alignment=TA_CENTER)
     sub_style = ParagraphStyle('sub', fontSize=9, textColor=colors.white,
                                 fontName='Helvetica', alignment=TA_CENTER)
     normal_style = ParagraphStyle('normal', fontSize=9, textColor=gris, fontName='Helvetica')
 
     elements = []
 
-    # Header
-    header_data = [[
-        Paragraph('<font color="white"><b>JLB SPORTS</b></font><br/><font size="8" color="#bfdbfe">Sistema de Gestión Comercial</font>', title_style),
-        Paragraph(f'<font color="white"><b>COTIZACIÓN #{quote.pk}</b></font><br/><font size="8" color="#bfdbfe">{quote.created_at.strftime("%d/%m/%Y")} · Válida {quote.valid_days} días</font>', sub_style),
-    ]]
+    # ── Header con logo ──────────────────────────────────────────────────────
+    logo_path = os.path.join(os.path.dirname(__file__), '..', 'static', 'imagenes', 'logo_blanco.png')
+    logo_path = os.path.abspath(logo_path)
+
+    if os.path.exists(logo_path):
+        logo_img = Image(logo_path, width=5*cm, height=1.6*cm)
+        logo_cell = logo_img
+    else:
+        logo_cell = Paragraph('<font color="white"><b>JLB SPORTS</b></font>', sub_style)
+
+    quote_info = Paragraph(
+        f'<font color="white"><b>COTIZACIÓN #{quote.pk}</b></font><br/>'
+        f'<font size="8" color="#fca5a5">{quote.created_at.strftime("%d/%m/%Y")} · Válida {quote.valid_days} días</font>',
+        sub_style
+    )
+
+    header_data = [[logo_cell, quote_info]]
     header_table = Table(header_data, colWidths=[11*cm, 6*cm])
     header_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), azul),
+        ('BACKGROUND', (0, 0), (-1, -1), negro),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('TOPPADDING', (0, 0), (-1, -1), 16),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 16),
-        ('LEFTPADDING', (0, 0), (0, -1), 18),
-        ('RIGHTPADDING', (-1, 0), (-1, -1), 18),
+        ('TOPPADDING', (0, 0), (-1, -1), 14),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 14),
+        ('LEFTPADDING', (0, 0), (0, -1), 16),
+        ('RIGHTPADDING', (-1, 0), (-1, -1), 16),
+        ('LINEBELOW', (0, 0), (-1, 0), 3, rojo),
     ]))
     elements.append(header_table)
     elements.append(Spacer(1, 0.5*cm))
 
-    # Client info
+    # ── Datos del cliente ────────────────────────────────────────────────────
     client = quote.client
     client_info = []
     display_name = client.name if client else (quote.client_name or 'Sin cliente')
@@ -204,7 +216,7 @@ def generate_quote_pdf(quote):
     elements.append(client_table)
     elements.append(Spacer(1, 0.4*cm))
 
-    # Items
+    # ── Tabla de ítems ───────────────────────────────────────────────────────
     items_data = [['Descripción', 'Cant.', 'Precio Unit.', 'Subtotal']]
     subtotal_sum = Decimal('0')
     for item in quote.items.all():
@@ -229,12 +241,12 @@ def generate_quote_pdf(quote):
         ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
         ('LEFTPADDING', (0, 0), (-1, -1), 8),
         ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-        ('LINEBELOW', (0, 0), (-1, 0), 0.5, azul),
+        ('LINEBELOW', (0, 0), (-1, 0), 2, rojo),
     ]))
     elements.append(items_table)
     elements.append(Spacer(1, 0.3*cm))
 
-    # Totals
+    # ── Totales ──────────────────────────────────────────────────────────────
     totals_data = []
     totals_data.append(['Subtotal:', f'${int(subtotal_sum):,}'.replace(',', '.')])
     if quote.discount_applied:
@@ -247,12 +259,12 @@ def generate_quote_pdf(quote):
         ('FONT', (0, -1), (-1, -1), 'Helvetica-Bold', 13),
         ('TEXTCOLOR', (0, 0), (-1, -2), gris),
         ('TEXTCOLOR', (0, -1), (0, -1), negro),
-        ('TEXTCOLOR', (-1, -1), (-1, -1), azul),
+        ('TEXTCOLOR', (-1, -1), (-1, -1), rojo),
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
         ('TOPPADDING', (0, 0), (-1, -1), 5),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#EFF6FF')),
-        ('LINEABOVE', (0, -1), (-1, -1), 1.5, azul),
+        ('BACKGROUND', (0, -1), (-1, -1), rojo_fondo),
+        ('LINEABOVE', (0, -1), (-1, -1), 1.5, rojo),
         ('RIGHTPADDING', (-1, 0), (-1, -1), 0),
     ]))
     elements.append(totals_table)
@@ -264,7 +276,7 @@ def generate_quote_pdf(quote):
         elements.append(Paragraph(f'<b>Observaciones:</b> {quote.notes}', normal_style))
 
     elements.append(Spacer(1, 0.5*cm))
-    elements.append(HRFlowable(width='100%', thickness=0.5, color=azul))
+    elements.append(HRFlowable(width='100%', thickness=0.5, color=rojo))
     elements.append(Spacer(1, 0.2*cm))
     footer_style = ParagraphStyle('footer', fontSize=7.5, textColor=gris, alignment=TA_CENTER)
     elements.append(Paragraph(
