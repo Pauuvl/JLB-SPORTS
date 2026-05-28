@@ -6,5 +6,6 @@ urlpatterns = [
     path('new/', views.sale_create, name='sale_create'),
     path('<int:pk>/', views.sale_detail, name='sale_detail'),
     path('<int:pk>/cancel/', views.sale_cancel, name='sale_cancel'),
+    path('<int:pk>/pdf/', views.sale_pdf, name='sale_pdf'),
     path('api/product-price/', views.get_product_price, name='product_price_api'),
 ]

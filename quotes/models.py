@@ -13,8 +13,10 @@ class Quote(models.Model):
     client       = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='quotes')
     client_name  = models.CharField(max_length=200, blank=True)
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    notes        = models.TextField(blank=True)
+    notes        = models.TextField(blank=True, verbose_name='Observaciones')
     valid_days   = models.PositiveIntegerField(default=15)
+    discount_applied = models.DecimalField(max_digits=5, decimal_places=2, default=0,
+                                           verbose_name='Descuento (%)')
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     created_at   = models.DateTimeField(auto_now_add=True)
 
@@ -25,7 +27,13 @@ class Quote(models.Model):
         return f"Cotizacion #{self.pk} — {self.display_client}"
 
     def calculate_total(self):
-        self.total_amount = sum(item.subtotal for item in self.items.all())
+        subtotal = sum(item.subtotal for item in self.items.all())
+        if self.discount_applied:
+            from decimal import Decimal
+            factor = 1 - (Decimal(str(self.discount_applied)) / 100)
+            self.total_amount = subtotal * factor
+        else:
+            self.total_amount = subtotal
         self.save()
 
     @property

@@ -6,7 +6,7 @@
 <div class="seccion-header">
   <div>
     <h1 class="seccion-titulo">{{ client.name }}</h1>
-    <p class="seccion-subtitulo">Cliente {{ client.get_client_type_display }}</p>
+    <p class="seccion-subtitulo">{{ client.get_client_type_display }} · Desde {{ client.created_at|date:"d/m/Y" }}</p>
   </div>
   <div class="seccion-acciones">
     <a href="{% url 'client_edit' client.pk %}" class="btn btn-outline">✏️ Editar</a>
@@ -16,25 +16,31 @@
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;">
   <div class="tarjeta">
-    <div class="tarjeta-cab"><span class="tarjeta-titulo">📋 Información de Contacto</span></div>
+    <div class="tarjeta-cab"><span class="tarjeta-titulo">📋 Información</span></div>
     <div class="tarjeta-cuerpo">
+      {% if client.cedula %}
+      <div class="info-linea"><span class="td-muted">🪪 Cédula / NIT</span><span class="bold">{{ client.cedula }}</span></div>
+      {% endif %}
       <div class="info-linea">
         <span class="td-muted">Tipo</span>
-        <span>
-          {% if client.client_type == 'vip' %}<span class="badge badge-rojo">⭐ VIP</span>
-          {% elif client.client_type == 'company' %}<span class="badge badge-azul">🏢 Empresa</span>
-          {% elif client.client_type == 'wholesale' %}<span class="badge badge-verde">📦 Mayorista</span>
-          {% else %}<span class="badge badge-gris">👤 Regular</span>{% endif %}
-        </span>
+        <span><span class="badge badge-azul">{{ client.get_client_type_display }}</span></span>
       </div>
-      <div class="info-linea"><span class="td-muted">Correo</span><span>{{ client.email|default:"—" }}</span></div>
-      <div class="info-linea"><span class="td-muted">Teléfono</span><span>{{ client.phone|default:"—" }}</span></div>
-      <div class="info-linea"><span class="td-muted">Dirección</span><span>{{ client.address|default:"—" }}</span></div>
+      {% if client.phone %}
+      <div class="info-linea"><span class="td-muted">📱 Teléfono</span><span>{{ client.phone }}</span></div>
+      {% endif %}
+      {% if client.email %}
+      <div class="info-linea"><span class="td-muted">✉️ Correo</span><span>{{ client.email }}</span></div>
+      {% endif %}
+      {% if client.municipio %}
+      <div class="info-linea"><span class="td-muted">📍 Municipio</span><span>{{ client.municipio }}</span></div>
+      {% endif %}
+      {% if client.address %}
+      <div class="info-linea"><span class="td-muted">Dirección</span><span>{{ client.address }}</span></div>
+      {% endif %}
       <div class="info-linea">
-        <span class="td-muted">Descuento extra</span>
+        <span class="td-muted">Descuento</span>
         <span>{% if client.discount_percent %}<span class="badge badge-verde">{{ client.discount_percent }}%</span>{% else %}Ninguno{% endif %}</span>
       </div>
-      <div class="info-linea"><span class="td-muted">Cliente desde</span><span>{{ client.created_at|date:"d/m/Y" }}</span></div>
       {% if client.notes %}
       <div style="margin-top:14px;padding:12px;background:var(--gris-fondo);border-radius:var(--radio-sm);font-size:0.84rem;color:var(--gris-texto);">
         📝 {{ client.notes }}

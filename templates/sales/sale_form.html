@@ -4,430 +4,357 @@
 {% block title %}Nueva Venta — JLB Sports{% endblock %}
 {% block topbar_title %}Registrar Venta{% endblock %}
 
+{% block extra_css %}
+<style>
+.venta-layout { display: grid; grid-template-columns: 1fr 300px; gap: 22px; align-items: start; }
+.resumen-card { position: sticky; top: 20px; }
+.descuento-strip {
+  background: linear-gradient(135deg, #fef2f2, #fff);
+  border: 1px solid var(--rojo-borde);
+  border-radius: var(--radio-sm);
+  padding: 12px 16px;
+  margin-top: 12px;
+  display: flex; align-items: center; gap: 12px;
+}
+.descuento-strip label { font-size: 0.78rem; font-weight: 700; color: var(--rojo); white-space: nowrap; }
+.descuento-strip input {
+  width: 80px; text-align: center; font-weight: 700; color: var(--rojo);
+  border: 2px solid var(--rojo-borde); border-radius: 6px; padding: 6px 10px;
+}
+.item-card {
+  background: var(--blanco);
+  border: 1px solid var(--gris-borde);
+  border-radius: var(--radio);
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: box-shadow 0.2s;
+}
+.item-card:hover { box-shadow: var(--sombra); }
+.item-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+.item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.item-num { background: var(--rojo); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; flex-shrink: 0; }
+.color-selector-wrap { margin-top: 8px; display: none; }
+.color-stock-info { font-size: 0.75rem; color: var(--gris-texto); margin-top: 4px; }
+.stock-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+}
+.stock-ok { background: var(--verde-suave); color: #059669; }
+.stock-bajo { background: var(--amarillo-suave); color: #d97706; }
+.stock-agotado { background: var(--rojo-suave); color: var(--rojo); }
+.resumen-linea { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 0.87rem; }
+.resumen-subtotal { border-top: 1px solid var(--gris-borde); margin-top: 8px; padding-top: 8px; }
+.resumen-descuento { color: var(--verde); font-weight: 600; }
+.resumen-total-big { font-size: 1.5rem; font-weight: 800; color: var(--rojo); }
+.agregar-btn-wrap { display: flex; justify-content: center; margin: 14px 0; }
+@media(max-width:900px){ .venta-layout{ grid-template-columns:1fr; } .item-grid{ grid-template-columns:1fr 1fr; } }
+</style>
+{% endblock %}
+
 {% block content %}
-
 <div class="seccion-header">
-
   <div>
-    <h1 class="seccion-titulo">Registrar Nueva Venta</h1>
-    <p class="seccion-subtitulo">
-      El stock se descuenta automáticamente al confirmar
-    </p>
+    <h1 class="seccion-titulo">🧾 Registrar Nueva Venta</h1>
+    <p class="seccion-subtitulo">El stock se descuenta automáticamente al confirmar</p>
   </div>
-
-  <a href="{% url 'sale_list' %}" class="btn btn-outline">
-    ← Volver
-  </a>
-
+  <a href="{% url 'sale_list' %}" class="btn btn-outline">← Volver</a>
 </div>
 
-<form method="post">
-
+<form method="post" id="form-venta">
   {% csrf_token %}
+  <div class="venta-layout">
 
-  <div class="venta-grid">
-
-    <!-- IZQUIERDA -->
+    <!-- COLUMNA IZQUIERDA -->
     <div>
 
       <!-- CLIENTE -->
       <div class="tarjeta mb-2">
-
-        <div class="tarjeta-cab">
-          <span class="tarjeta-titulo">👤 Cliente</span>
-        </div>
-
+        <div class="tarjeta-cab"><span class="tarjeta-titulo">👤 Cliente</span></div>
         <div class="tarjeta-cuerpo">
-
           <div class="form-grid">
-
             <div class="form-grupo">
-
-              <label>CLIENTE (OPCIONAL)</label>
-
-              <select
-                name="client"
-                id="select-cliente"
-                onchange="alCambiarCliente()"
-              >
-
-                <option value="" data-multiplicador="1">
-                  — Mostrador (sin descuento) —
-                </option>
-
+              <label>Cliente (opcional)</label>
+              <select name="client" id="select-cliente" onchange="alCambiarCliente()">
+                <option value="" data-descuento="0">— Mostrador (sin descuento) —</option>
                 {% for c in clients %}
-
-                <option
-                  value="{{ c.pk }}"
-                  data-multiplicador="{{ c.price_multiplier }}"
-                >
-
-                  {{ c.name }} — {{ c.get_client_type_display }}
-
-                  {% if c.discount_percent %}
-                    ({{ c.discount_percent }}% desc.)
-                  {% endif %}
-
+                <option value="{{ c.pk }}" data-descuento="{{ c.discount_percent }}">
+                  {{ c.name }}{% if c.cedula %} · {{ c.cedula }}{% endif %} — {{ c.get_client_type_display }}
+                  {% if c.discount_percent %}({{ c.discount_percent }}% desc.){% endif %}
                 </option>
-
                 {% endfor %}
-
               </select>
-
             </div>
-
             <div class="form-grupo">
-
-              <label>OBSERVACIONES</label>
-
-              <input
-                type="text"
-                name="notes"
-                placeholder="Notas opcionales..."
-              >
-
+              <label>Observaciones</label>
+              <input type="text" name="notes" placeholder="Notas opcionales sobre la venta...">
             </div>
-
           </div>
 
+          <!-- Descuento manual -->
+          <div class="descuento-strip">
+            <label>🏷️ DESCUENTO MANUAL:</label>
+            <input type="number" name="discount_percent" id="input-descuento"
+                   min="0" max="100" step="0.5" value="0"
+                   oninput="recalcularTodo()">
+            <span style="font-size:0.85rem;color:var(--gris-texto);">%</span>
+            <span style="font-size:0.8rem;color:var(--gris-texto);margin-left:auto;" id="desc-hint"></span>
+          </div>
         </div>
-
       </div>
 
       <!-- PRODUCTOS -->
       <div class="tarjeta">
-
         <div class="tarjeta-cab">
-
           <span class="tarjeta-titulo">📦 Productos</span>
-
-          <button
-            type="button"
-            class="btn btn-outline btn-sm"
-            onclick="agregarItem()"
-          >
-            + Agregar
-          </button>
-
+          <button type="button" class="btn btn-outline btn-sm" onclick="agregarItem()">+ Agregar Producto</button>
         </div>
-
         <div class="tarjeta-cuerpo">
-
           {% if not products %}
-
-          <div class="alerta alerta-warning">
-            ⚠️ No hay productos registrados en el inventario.
-          </div>
-
+          <div class="alerta alerta-warning">⚠️ No hay productos en el inventario.</div>
           {% endif %}
-
-          <div id="items-lista" class="items-lista"></div>
-
+          <div id="items-lista"></div>
+          <div class="agregar-btn-wrap" id="btn-agregar-wrap">
+            <button type="button" class="btn btn-outline" onclick="agregarItem()" style="width:100%;border-style:dashed;">
+              ＋ Agregar otro producto
+            </button>
+          </div>
         </div>
-
       </div>
 
     </div>
 
-    <!-- DERECHA -->
-    <div class="venta-resumen">
+    <!-- COLUMNA DERECHA (resumen) -->
+    <div class="resumen-card">
+      <div class="tarjeta">
+        <div class="tarjeta-cab"><span class="tarjeta-titulo">📋 Resumen</span></div>
+        <div class="tarjeta-cuerpo">
+          <div class="resumen-linea">
+            <span class="td-muted">Artículos</span>
+            <span class="bold" id="resumen-items">0</span>
+          </div>
+          <div class="resumen-linea resumen-subtotal">
+            <span>Subtotal</span>
+            <span id="resumen-subtotal">$0</span>
+          </div>
+          <div class="resumen-linea resumen-descuento" id="resumen-desc-linea" style="display:none;">
+            <span id="resumen-desc-label">Descuento (0%)</span>
+            <span id="resumen-desc-valor">-$0</span>
+          </div>
+          <div class="resumen-linea" style="margin-top:12px;padding-top:14px;border-top:2px solid var(--rojo);">
+            <span class="bold">TOTAL</span>
+            <span class="resumen-total-big" id="resumen-total">$0</span>
+          </div>
 
-      <h3>📋 RESUMEN</h3>
+          <button type="submit" class="btn btn-rojo btn-lg btn-bloque mt-2">
+            💳 Confirmar Venta
+          </button>
+          <a href="{% url 'sale_list' %}" class="btn btn-outline btn-bloque mt-1">Cancelar</a>
 
-      <div class="resumen-linea">
-        <span class="td-muted">Artículos</span>
-        <span id="resumen-items" class="bold">0</span>
+          <div class="alerta alerta-warning mt-2" style="font-size:0.78rem;padding:9px 12px;">
+            ⚠️ El stock se descuenta inmediatamente al confirmar.
+          </div>
+        </div>
       </div>
-
-      <div
-        class="resumen-linea"
-        style="margin-top:8px;padding-top:12px;border-top:2px solid var(--gris-borde);"
-      >
-
-        <span class="bold" style="font-size:0.9rem;">
-          TOTAL
-        </span>
-
-        <span class="resumen-total-valor" id="resumen-total">
-          $0
-        </span>
-
-      </div>
-
-      <button
-        type="submit"
-        class="btn btn-rojo btn-lg btn-bloque mt-2"
-      >
-        💳 Confirmar Venta
-      </button>
-
-      <a
-        href="{% url 'sale_list' %}"
-        class="btn btn-outline btn-bloque mt-1"
-      >
-        Cancelar
-      </a>
-
-      <div
-        class="alerta alerta-warning mt-2"
-        style="font-size:0.78rem;padding:9px 12px;"
-      >
-        ⚠️ El stock se descuenta de forma inmediata al confirmar.
-      </div>
-
     </div>
 
   </div>
-
 </form>
 
-<!-- PRODUCTOS -->
 <script>
-
 window.PRODUCTOS = {{ products_json|safe }};
 
-</script>
-
-<script>
-
-let multiplicadorCliente = 1;
 let itemIndex = 0;
 
 function alCambiarCliente() {
-
   const sel = document.getElementById('select-cliente');
-
-  multiplicadorCliente =
-    parseFloat(sel.selectedOptions[0].dataset.multiplicador) || 1;
-
+  const opt = sel.selectedOptions[0];
+  const descuento = parseFloat(opt.dataset.descuento) || 0;
+  document.getElementById('input-descuento').value = descuento;
+  if (descuento > 0) {
+    document.getElementById('desc-hint').textContent = `Descuento del cliente aplicado`;
+  } else {
+    document.getElementById('desc-hint').textContent = '';
+  }
   recalcularTodo();
 }
 
 function formatoPesos(v) {
+  return '$' + Math.round(v).toLocaleString('es-CO').replace(/,/g, '.');
+}
 
-  return '$' + Math.round(v)
-    .toLocaleString('es-CO')
-    .replace(/,/g, '.');
+function getDescuento() {
+  return parseFloat(document.getElementById('input-descuento').value) || 0;
 }
 
 function agregarItem() {
-
-  if (window.PRODUCTOS.length === 0) {
-
-    alert('No hay productos en el inventario.');
-    return;
-  }
+  if (window.PRODUCTOS.length === 0) { alert('No hay productos en el inventario.'); return; }
 
   const lista = document.getElementById('items-lista');
   const idx = itemIndex++;
 
-  const opcionesProducto = window.PRODUCTOS.map(p => {
-
-    const stockLabel =
-      p.stock_quantity === 0
-        ? ' ⚠️ AGOTADO'
-        : ` — Stock: ${p.stock_quantity}`;
-
-    return `
-      <option
-        value="${p.id}"
-        data-precio="${p.sale_price}"
-        data-stock="${p.stock_quantity}"
-      >
-        ${p.name}${stockLabel}
-      </option>
-    `;
-
+  const opts = window.PRODUCTOS.map(p => {
+    const stockLabel = p.stock === 0 ? ' ⚠️ AGOTADO' : ` (Stock: ${p.stock})`;
+    return `<option value="${p.id}" data-precio="${p.precio}" data-stock="${p.stock}" data-colores='${JSON.stringify(p.colores)}' data-color-stocks='${JSON.stringify(p.color_stocks || [])}'>${p.nombre}${stockLabel}</option>`;
   }).join('');
 
   const div = document.createElement('div');
-
-  div.className = 'item-fila';
+  div.className = 'item-card';
   div.id = `item-${idx}`;
-
   div.innerHTML = `
-
-    <div class="item-fila-grid">
-
-      <div class="form-grupo" style="grid-column:1/-1">
-
-        <label>PRODUCTO</label>
-
-        <select
-          name="product_id[]"
-          onchange="alCambiarProducto(${idx})"
-          required
-          style="border:2px solid var(--rojo);"
-        >
-
-          <option value="">— Seleccionar —</option>
-
-          ${opcionesProducto}
-
-        </select>
-
+    <div class="item-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="item-num">${idx + 1}</div>
+        <span class="bold" style="font-size:0.85rem;" id="item-name-${idx}">Seleccione un producto</span>
       </div>
-
-      <div class="form-grupo">
-
-        <label>CANTIDAD</label>
-
-        <input
-          type="number"
-          name="quantity[]"
-          id="qty-${idx}"
-          value="1"
-          min="1"
-          oninput="validarStock(${idx}); recalcularTodo();"
-          required
-        >
-
-      </div>
-
-      <div class="form-grupo">
-
-        <label>PRECIO UNIT.</label>
-
-        <input
-          type="text"
-          id="precio-${idx}"
-          readonly
-          value="$0"
-          style="background:var(--gris-fondo);"
-        >
-
-      </div>
-
-      <div class="form-grupo">
-
-        <label>SUBTOTAL</label>
-
-        <input
-          type="text"
-          id="subtotal-${idx}"
-          readonly
-          value="$0"
-          style="background:var(--gris-fondo);font-weight:700;"
-        >
-
-      </div>
-
+      <button type="button" onclick="eliminarItem(${idx})" style="background:none;border:none;color:var(--gris-texto);cursor:pointer;font-size:1rem;" title="Quitar">✕</button>
     </div>
-
-    <button
-      type="button"
-      onclick="eliminarItem(${idx})"
-      style="margin-top:8px;background:none;border:none;color:var(--rojo);cursor:pointer;font-size:0.85rem;"
-    >
-      ✕ Quitar
-    </button>
-
-    <hr style="margin:14px 0;border-color:var(--gris-borde);">
-
+    <div class="item-grid">
+      <div class="form-grupo" style="margin:0;">
+        <label>Producto</label>
+        <select name="product_id[]" id="prod-sel-${idx}" onchange="alCambiarProducto(${idx})" required>
+          <option value="">— Seleccionar —</option>
+          ${opts}
+        </select>
+        <div class="color-stock-info" id="stock-info-${idx}"></div>
+      </div>
+      <div class="form-grupo" style="margin:0;">
+        <label>Cantidad</label>
+        <input type="number" name="quantity[]" id="qty-${idx}" value="1" min="1"
+               oninput="validarStock(${idx}); recalcularTodo();" required>
+      </div>
+      <div class="form-grupo" style="margin:0;">
+        <label>Precio Unit.</label>
+        <input type="text" id="precio-${idx}" readonly value="$0" style="background:var(--gris-fondo);">
+      </div>
+      <div class="form-grupo" style="margin:0;">
+        <label>Subtotal</label>
+        <input type="text" id="subtotal-${idx}" readonly value="$0" style="background:var(--gris-fondo);font-weight:700;color:var(--rojo);">
+      </div>
+    </div>
+    <div class="color-selector-wrap" id="color-wrap-${idx}">
+      <div class="form-grupo" style="margin:0;">
+        <label>Color</label>
+        <select name="color_vendido[]" id="color-sel-${idx}" onchange="validarColorStock(${idx}); recalcularTodo();">
+          <option value="">— Sin color específico —</option>
+        </select>
+        <div class="color-stock-info" id="color-stock-info-${idx}"></div>
+      </div>
+    </div>
   `;
-
   lista.appendChild(div);
-
   recalcularTodo();
 }
 
 function alCambiarProducto(idx) {
-
-  const sel = document.querySelector(
-    `#item-${idx} select[name="product_id[]"]`
-  );
-
+  const sel = document.getElementById(`prod-sel-${idx}`);
   const opt = sel.selectedOptions[0];
-
   if (!opt || !opt.value) return;
 
-  const precio =
-    parseFloat(opt.dataset.precio) * multiplicadorCliente;
+  const precio = parseFloat(opt.dataset.precio) || 0;
+  const stock = parseInt(opt.dataset.stock) || 0;
+  const colores = JSON.parse(opt.dataset.colores || '[]');
+  const colorStocks = JSON.parse(opt.dataset.colorStocks || '[]');
 
-  document.getElementById(`precio-${idx}`).value =
-    formatoPesos(precio);
+  document.getElementById(`item-name-${idx}`).textContent = opt.text.split(' (Stock')[0].split(' ⚠️')[0];
+  document.getElementById(`precio-${idx}`).value = formatoPesos(precio);
+
+  // Stock badge
+  let badgeClass = 'stock-ok', badgeText = `Stock: ${stock}`;
+  if (stock === 0) { badgeClass = 'stock-agotado'; badgeText = 'Agotado'; }
+  else if (stock <= 5) { badgeClass = 'stock-bajo'; badgeText = `Stock bajo: ${stock}`; }
+  document.getElementById(`stock-info-${idx}`).innerHTML = `<span class="stock-badge ${badgeClass}">${badgeText}</span>`;
+
+  // Color selector
+  const colorWrap = document.getElementById(`color-wrap-${idx}`);
+  const colorSel = document.getElementById(`color-sel-${idx}`);
+  if (colores.length > 0) {
+    colorWrap.style.display = 'block';
+    colorSel.innerHTML = '<option value="">— Sin color específico —</option>';
+    colores.forEach(c => {
+      const cs = colorStocks.find(x => x.color === c);
+      const stockInfo = cs ? ` (Stock: ${cs.stock})` : '';
+      colorSel.innerHTML += `<option value="${c}" data-color-stock="${cs ? cs.stock : ''}">${c}${stockInfo}</option>`;
+    });
+  } else {
+    colorWrap.style.display = 'none';
+    colorSel.value = '';
+  }
 
   validarStock(idx);
-
   recalcularTodo();
 }
 
 function validarStock(idx) {
-
-  const sel = document.querySelector(
-    `#item-${idx} select[name="product_id[]"]`
-  );
-
+  const sel = document.getElementById(`prod-sel-${idx}`);
   const opt = sel?.selectedOptions[0];
-
   if (!opt || !opt.value) return;
-
   const stock = parseInt(opt.dataset.stock) || 0;
-
   const qtyInput = document.getElementById(`qty-${idx}`);
-
   let qty = parseInt(qtyInput.value) || 1;
-
-  if (qty > stock) {
-
-    qty = stock;
-
+  if (qty > stock && stock > 0) {
     qtyInput.value = stock;
+    qty = stock;
+  }
+  qtyInput.max = stock;
+}
 
-    alert(`Solo hay ${stock} unidades disponibles.`);
+function validarColorStock(idx) {
+  const colorSel = document.getElementById(`color-sel-${idx}`);
+  const opt = colorSel?.selectedOptions[0];
+  const info = document.getElementById(`color-stock-info-${idx}`);
+  if (!opt || !opt.value) { if(info) info.innerHTML = ''; return; }
+  const colorStock = opt.dataset.colorStock;
+  if (colorStock !== '') {
+    const s = parseInt(colorStock);
+    let cls = 'stock-ok', txt = `Disponible: ${s}`;
+    if (s === 0) { cls = 'stock-agotado'; txt = 'Agotado en este color'; }
+    else if (s <= 3) { cls = 'stock-bajo'; txt = `Stock bajo: ${s}`; }
+    info.innerHTML = `<span class="stock-badge ${cls}">${txt}</span>`;
+    const qtyInput = document.getElementById(`qty-${idx}`);
+    if (parseInt(qtyInput.value) > s && s > 0) qtyInput.value = s;
   }
 }
 
 function recalcularTodo() {
-
-  let total = 0;
-  let totalItems = 0;
-
-  document.querySelectorAll('.item-fila').forEach(fila => {
-
+  let subtotal = 0, totalItems = 0;
+  document.querySelectorAll('.item-card').forEach(fila => {
     const idx = fila.id.replace('item-', '');
-
-    const sel = fila.querySelector(
-      'select[name="product_id[]"]'
-    );
-
+    const sel = fila.querySelector('select[name="product_id[]"]');
     const opt = sel?.selectedOptions[0];
-
     if (!opt || !opt.value) return;
-
-    const precio =
-      parseFloat(opt.dataset.precio) * multiplicadorCliente;
-
-    const qty =
-      parseInt(document.getElementById(`qty-${idx}`)?.value) || 1;
-
-    const subtotal = precio * qty;
-
-    document.getElementById(`precio-${idx}`).value =
-      formatoPesos(precio);
-
-    document.getElementById(`subtotal-${idx}`).value =
-      formatoPesos(subtotal);
-
-    total += subtotal;
+    const precio = parseFloat(opt.dataset.precio) || 0;
+    const qty = parseInt(document.getElementById(`qty-${idx}`)?.value) || 1;
+    const sub = precio * qty;
+    document.getElementById(`precio-${idx}`).value = formatoPesos(precio);
+    document.getElementById(`subtotal-${idx}`).value = formatoPesos(sub);
+    subtotal += sub;
     totalItems += qty;
-
   });
 
-  document.getElementById('resumen-total').textContent =
-    formatoPesos(total);
+  const desc = getDescuento();
+  const descMonto = subtotal * (desc / 100);
+  const total = subtotal - descMonto;
 
-  document.getElementById('resumen-items').textContent =
-    totalItems;
+  document.getElementById('resumen-items').textContent = totalItems;
+  document.getElementById('resumen-subtotal').textContent = formatoPesos(subtotal);
+  document.getElementById('resumen-total').textContent = formatoPesos(total);
+
+  const descLinea = document.getElementById('resumen-desc-linea');
+  if (desc > 0 && subtotal > 0) {
+    descLinea.style.display = 'flex';
+    document.getElementById('resumen-desc-label').textContent = `Descuento (${desc}%)`;
+    document.getElementById('resumen-desc-valor').textContent = `-${formatoPesos(descMonto)}`;
+  } else {
+    descLinea.style.display = 'none';
+  }
 }
 
 function eliminarItem(idx) {
-
   document.getElementById(`item-${idx}`)?.remove();
-
   recalcularTodo();
 }
 
+// Add first item on load
+agregarItem();
 </script>
-
 {% endblock %}

@@ -98,3 +98,17 @@ class Product(models.Model):
         if self.cost_price and self.cost_price > 0:
             return ((self.sale_price - self.cost_price) / self.cost_price) * 100
         return 0
+
+
+class ProductColorStock(models.Model):
+    """Stock individual por color de un producto."""
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='color_stocks')
+    color = models.CharField(max_length=100, verbose_name='Color')
+    stock = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ('product', 'color')
+        ordering = ['color']
+
+    def __str__(self):
+        return f"{self.product.name} — {self.color}: {self.stock}"

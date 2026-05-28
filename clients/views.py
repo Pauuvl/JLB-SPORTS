@@ -12,7 +12,7 @@ def client_list(request):
     clients = Client.objects.all()
 
     if query:
-        clients = clients.filter(Q(name__icontains=query) | Q(email__icontains=query))
+        clients = clients.filter(Q(name__icontains=query) | Q(email__icontains=query) | Q(cedula__icontains=query))
     if client_type:
         clients = clients.filter(client_type=client_type)
 
@@ -26,27 +26,30 @@ def client_list(request):
     return render(request, 'clients/client_list.html', context)
 
 
+def _save_client_from_post(client, post):
+    client.name = post.get('name', '').strip()
+    client.cedula = post.get('cedula', '').strip()
+    client.client_type = post.get('client_type', 'regular')
+    client.email = post.get('email', '')
+    client.phone = post.get('phone', '')
+    client.municipio = post.get('municipio', '').strip()
+    client.address = post.get('address', '')
+    client.discount_percent = post.get('discount_percent') or 0
+    client.notes = post.get('notes', '')
+    return client
+
+
 @login_required
 def client_create(request):
     if request.method == 'POST':
-        name = request.POST.get('name')
-        client_type = request.POST.get('client_type', 'regular')
-        email = request.POST.get('email', '')
-        phone = request.POST.get('phone', '')
-        address = request.POST.get('address', '')
-        discount_percent = request.POST.get('discount_percent', 0)
-        notes = request.POST.get('notes', '')
-
+        name = request.POST.get('name', '').strip()
         if not name:
-            messages.error(request, 'Client name is required.')
+            messages.error(request, 'El nombre del cliente es requerido.')
         else:
-            Client.objects.create(
-                name=name, client_type=client_type, email=email,
-                phone=phone, address=address, discount_percent=discount_percent, notes=notes
-            )
-            messages.success(request, f'Client "{name}" created successfully.')
+            client = _save_client_from_post(Client(), request.POST)
+            client.save()
+            messages.success(request, f'Cliente "{name}" registrado exitosamente.')
             return redirect('client_list')
-
     return render(request, 'clients/client_form.html', {
         'client_types': Client.CLIENT_TYPES, 'active_page': 'clients'
     })
@@ -56,17 +59,10 @@ def client_create(request):
 def client_edit(request, pk):
     client = get_object_or_404(Client, pk=pk)
     if request.method == 'POST':
-        client.name = request.POST.get('name')
-        client.client_type = request.POST.get('client_type', 'regular')
-        client.email = request.POST.get('email', '')
-        client.phone = request.POST.get('phone', '')
-        client.address = request.POST.get('address', '')
-        client.discount_percent = request.POST.get('discount_percent', 0)
-        client.notes = request.POST.get('notes', '')
+        client = _save_client_from_post(client, request.POST)
         client.save()
-        messages.success(request, f'Client "{client.name}" updated.')
-        return redirect('client_list')
-
+        messages.success(request, f'Cliente "{client.name}" actualizado.')
+        return redirect('client_detail', pk=pk)
     return render(request, 'clients/client_form.html', {
         'client': client, 'client_types': Client.CLIENT_TYPES, 'active_page': 'clients'
     })
@@ -78,7 +74,7 @@ def client_delete(request, pk):
     if request.method == 'POST':
         name = client.name
         client.delete()
-        messages.success(request, f'Client "{name}" deleted.')
+        messages.success(request, f'Cliente "{name}" eliminado.')
         return redirect('client_list')
     return render(request, 'clients/client_confirm_delete.html', {'client': client, 'active_page': 'clients'})
 
