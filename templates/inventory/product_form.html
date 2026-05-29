@@ -97,19 +97,38 @@
         <div class="form-grid">
           <div class="form-grupo">
             <label>Precio de Costo ($) *</label>
-            <input type="number" name="cost_price" id="id_cost_price" value="{{ product.cost_price|default:'' }}" step="1" min="0" required placeholder="Ej: 85000" oninput="calcularMargen()">
+            <input type="number" name="cost_price" id="id_cost_price"
+                   value="{{ product.cost_price|floatformat:0|default:'' }}"
+                   step="1" min="0" required
+                   placeholder="Ej: 85000"
+                   oninput="calcularMargen()">
           </div>
           <div class="form-grupo">
             <label>Precio de Venta ($) *</label>
-            <input type="number" name="sale_price" id="id_sale_price" value="{{ product.sale_price|default:'' }}" step="1" min="0" required placeholder="Ej: 150000" oninput="calcularMargen()">
+            <input type="number" name="sale_price" id="id_sale_price"
+                   value="{{ product.sale_price|floatformat:0|default:'' }}"
+                   step="1" min="0" required
+                   placeholder="Ej: 150000"
+                   oninput="calcularMargen()">
           </div>
         </div>
         <div id="preview-precios" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;background:var(--gris-fondo);border:1px solid var(--gris-borde);border-radius:var(--radio-sm);padding:14px 20px;margin-top:14px;">
-
-          <div><div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Costo</div><div id="prev-costo" style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;">$0</div></div>
-          <div><div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Precio Venta</div><div id="prev-venta" style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;">$0</div></div>
-          <div><div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Ganancia Unit.</div><div id="prev-ganancia" style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;">$0</div></div>
-          <div><div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Margen %</div><div id="prev-margen" style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;">—</div></div>
+          <div>
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Costo</div>
+            <div id="prev-costo" style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;">$0</div>
+          </div>
+          <div>
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Precio Venta</div>
+            <div id="prev-venta" style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;">$0</div>
+          </div>
+          <div>
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Ganancia Unit.</div>
+            <div id="prev-ganancia" style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;">$0</div>
+          </div>
+          <div>
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--gris-texto);font-weight:700;margin-bottom:4px;">Margen %</div>
+            <div id="prev-margen" style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;">—</div>
+          </div>
         </div>
       </div>
 
@@ -180,18 +199,18 @@ function formatoPesos(v) {
 }
 
 function calcularMargen() {
-  const costo = parseInt(document.getElementById('id_cost_price').value) || 0;
-  const venta = parseInt(document.getElementById('id_sale_price').value) || 0;
+  const costo   = parseInt(document.getElementById('id_cost_price').value) || 0;
+  const venta   = parseInt(document.getElementById('id_sale_price').value) || 0;
   const ganancia = venta - costo;
-  const margen = costo > 0 ? ((ganancia / costo) * 100).toFixed(1) : 0;
-  const colorM = margen >= 30 ? 'var(--verde)' : margen >= 15 ? 'var(--amarillo)' : 'var(--rojo)';
-  const colorG = ganancia >= 0 ? 'var(--verde)' : 'var(--rojo)';
-  document.getElementById('prev-costo').textContent = formatoPesos(costo);
-  document.getElementById('prev-venta').textContent = formatoPesos(venta);
-  document.getElementById('prev-ganancia').textContent = formatoPesos(ganancia);
-  document.getElementById('prev-ganancia').style.color = colorG;
-  document.getElementById('prev-margen').textContent = margen + '%';
-  document.getElementById('prev-margen').style.color = colorM;
+  const margen  = costo > 0 ? ((ganancia / costo) * 100).toFixed(1) : 0;
+  const colorM  = margen >= 30 ? 'var(--verde)' : margen >= 15 ? 'var(--amarillo)' : 'var(--rojo)';
+  const colorG  = ganancia >= 0 ? 'var(--verde)' : 'var(--rojo)';
+  document.getElementById('prev-costo').textContent       = formatoPesos(costo);
+  document.getElementById('prev-venta').textContent       = formatoPesos(venta);
+  document.getElementById('prev-ganancia').textContent    = formatoPesos(ganancia);
+  document.getElementById('prev-ganancia').style.color    = colorG;
+  document.getElementById('prev-margen').textContent      = margen + '%';
+  document.getElementById('prev-margen').style.color      = colorM;
 }
 
 function agregarColorStock() {
@@ -216,6 +235,7 @@ function agregarColorStock() {
   div.querySelector('input[name="color_nombre[]"]').focus();
 }
 
+// Calcular al cargar la página (muestra los valores actuales del producto)
 calcularMargen();
 </script>
 {% endblock %}
