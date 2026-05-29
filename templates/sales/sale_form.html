@@ -442,14 +442,13 @@ function recalcularTodo() {
 }
 
 // ------------------------------------------------------------------
-// Init — un solo item al cargar, DESPUÉS de que main.js haya corrido
+// Init — limpiar lo que main.js pudo haber insertado y quedar en cero
 // ------------------------------------------------------------------
 (function init() {
-  // Limpiar cualquier item que main.js haya podido insertar
   const lista = document.getElementById('items-lista');
   if (lista) lista.innerHTML = '';
   _ventaItemIndex = 0;
-  agregarItem();
+  // No se agrega ningún item automáticamente; el usuario usa el botón.
 })();
 </script>
 {% endblock %}
