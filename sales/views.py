@@ -84,19 +84,26 @@ def sale_create(request):
                     qty = int(qty)
                     color = colores[i] if i < len(colores) else ''
 
-                    # Check general stock
+                    # ── Validar stock general ──────────────────────────
                     if product.stock_quantity < qty:
                         raise ValueError(
                             f'Stock insuficiente para "{product.name}". '
                             f'Disponible: {product.stock_quantity}, Solicitado: {qty}'
                         )
 
-                    # Check color stock if applicable
+                    # ── Validar y obtener stock por color ──────────────
+                    cs = None
                     if color:
-                        cs = ProductColorStock.objects.filter(product=product, color=color).first()
-                        if cs and cs.stock < qty:
+                        cs = ProductColorStock.objects.select_for_update().filter(
+                            product=product, color=color
+                        ).first()
+                        if cs is None:
                             raise ValueError(
-                                f'Stock de color "{color}" insuficiente para "{product.name}". '
+                                f'El color "{color}" no está registrado para "{product.name}".'
+                            )
+                        if cs.stock < qty:
+                            raise ValueError(
+                                f'Stock del color "{color}" insuficiente para "{product.name}". '
                                 f'Disponible: {cs.stock}, Solicitado: {qty}'
                             )
 
@@ -108,15 +115,14 @@ def sale_create(request):
                         color_vendido=color,
                     )
 
-                    # Deduct general stock
+                    # ── Descontar stock general ────────────────────────
                     product.stock_quantity -= qty
                     product.save()
 
-                    # Deduct color stock
-                    if color:
-                        ProductColorStock.objects.filter(product=product, color=color).update(
-                            stock=models_F_expr(color, qty, product)
-                        )
+                    # ── Descontar stock por color ──────────────────────
+                    if cs is not None:
+                        cs.stock -= qty
+                        cs.save()
 
                 sale.calculate_total()
                 total_fmt = _fmt_pesos(sale.total_amount)
@@ -133,15 +139,6 @@ def sale_create(request):
         'products_json': _build_products_json(products), 'active_page': 'sales',
     })
 
-
-def models_F_expr(color, qty, product):
-    """Helper to subtract qty from color stock using raw update."""
-    from django.db.models import F
-    cs = ProductColorStock.objects.filter(product=product, color=color).first()
-    if cs:
-        cs.stock = max(0, cs.stock - qty)
-        cs.save()
-    return cs.stock if cs else 0
 
 
 @login_required
