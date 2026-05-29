@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Sum, Count, Q, F
 from django.http import JsonResponse
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from .models import Product, Category, ProductColorStock
 from sales.models import Sale, SaleItem
@@ -103,39 +103,58 @@ def _save_product_colors(product, color_names, color_stocks):
         obj.save()
 
 
+def _parse_decimal(value, field_name):
+    """Parse a decimal value from POST, raising ValueError with a clear message."""
+    try:
+        val = Decimal(str(value).strip())
+        if val < 0:
+            raise ValueError(f'"{field_name}" no puede ser negativo.')
+        return val
+    except InvalidOperation:
+        raise ValueError(f'"{field_name}" no es un número válido.')
+
+
 @login_required
 def product_create(request):
     categories = Category.objects.all()
     if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
-        codigo = request.POST.get('codigo', '').strip() or None
-        category_id = request.POST.get('category') or None
-        marca = request.POST.get('marca', '').strip()
-        talla = request.POST.get('talla', '').strip()
-        color = request.POST.get('color', '').strip()
-        cost_price = request.POST.get('cost_price')
-        sale_price = request.POST.get('sale_price')
-        stock_quantity = request.POST.get('stock_quantity')
-        min_stock = request.POST.get('min_stock', 5)
-        description = request.POST.get('description', '')
+        name          = request.POST.get('name', '').strip()
+        codigo        = request.POST.get('codigo', '').strip() or None
+        category_id   = request.POST.get('category') or None
+        marca         = request.POST.get('marca', '').strip()
+        talla         = request.POST.get('talla', '').strip()
+        color         = request.POST.get('color', '').strip()
+        cost_price    = request.POST.get('cost_price', '').strip()
+        sale_price    = request.POST.get('sale_price', '').strip()
+        stock_quantity = request.POST.get('stock_quantity', '').strip()
+        min_stock     = request.POST.get('min_stock', '5').strip() or '5'
+        description   = request.POST.get('description', '')
 
         if not all([name, cost_price, sale_price, stock_quantity]):
-            messages.error(request, 'Complete todos los campos requeridos.')
+            messages.error(request, 'Complete todos los campos requeridos: nombre, costo, precio de venta y stock.')
         else:
-            product = Product.objects.create(
-                name=name, codigo=codigo, category_id=category_id,
-                marca=marca, talla=talla, color=color,
-                cost_price=cost_price, sale_price=sale_price,
-                stock_quantity=stock_quantity, min_stock=min_stock,
-                description=description,
-            )
-            color_names = request.POST.getlist('color_nombre[]')
-            color_stocks = request.POST.getlist('color_stock[]')
-            _save_product_colors(product, color_names, color_stocks)
-            messages.success(request, f'Producto "{name}" creado exitosamente.')
-            return redirect('product_list')
+            try:
+                product = Product.objects.create(
+                    name=name, codigo=codigo, category_id=category_id,
+                    marca=marca, talla=talla, color=color,
+                    cost_price=_parse_decimal(cost_price, 'Precio de Costo'),
+                    sale_price=_parse_decimal(sale_price, 'Precio de Venta'),
+                    stock_quantity=int(stock_quantity),
+                    min_stock=int(min_stock),
+                    description=description,
+                )
+                color_names  = request.POST.getlist('color_nombre[]')
+                color_stocks = request.POST.getlist('color_stock[]')
+                _save_product_colors(product, color_names, color_stocks)
+                messages.success(request, f'Producto "{name}" creado exitosamente.')
+                return redirect('product_list')
+            except ValueError as e:
+                messages.error(request, str(e))
 
-    return render(request, 'inventory/product_form.html', {'categories': categories, 'active_page': 'inventory'})
+    return render(request, 'inventory/product_form.html', {
+        'categories': categories,
+        'active_page': 'inventory',
+    })
 
 
 @login_required
@@ -144,30 +163,44 @@ def product_edit(request, pk):
     categories = Category.objects.all()
 
     if request.method == 'POST':
-        product.name = request.POST.get('name', '').strip()
-        product.codigo = request.POST.get('codigo', '').strip() or None
-        product.category_id = request.POST.get('category') or None
-        product.marca = request.POST.get('marca', '').strip()
-        product.talla = request.POST.get('talla', '').strip()
-        product.color = request.POST.get('color', '').strip()
-        product.cost_price = request.POST.get('cost_price')
-        product.sale_price = request.POST.get('sale_price')
-        product.stock_quantity = request.POST.get('stock_quantity')
-        product.min_stock = request.POST.get('min_stock', 5)
-        product.description = request.POST.get('description', '')
-        product.save()
+        name          = request.POST.get('name', '').strip()
+        cost_price    = request.POST.get('cost_price', '').strip()
+        sale_price    = request.POST.get('sale_price', '').strip()
+        stock_quantity = request.POST.get('stock_quantity', '').strip()
+        min_stock     = request.POST.get('min_stock', '5').strip() or '5'
 
-        color_names = request.POST.getlist('color_nombre[]')
-        color_stocks = request.POST.getlist('color_stock[]')
-        _save_product_colors(product, color_names, color_stocks)
+        if not all([name, cost_price, sale_price, stock_quantity]):
+            messages.error(request, 'Complete todos los campos requeridos: nombre, costo, precio de venta y stock.')
+        else:
+            try:
+                product.name          = name
+                product.codigo        = request.POST.get('codigo', '').strip() or None
+                product.category_id   = request.POST.get('category') or None
+                product.marca         = request.POST.get('marca', '').strip()
+                product.talla         = request.POST.get('talla', '').strip()
+                product.color         = request.POST.get('color', '').strip()
+                product.cost_price    = _parse_decimal(cost_price, 'Precio de Costo')
+                product.sale_price    = _parse_decimal(sale_price, 'Precio de Venta')
+                product.stock_quantity = int(stock_quantity)
+                product.min_stock     = int(min_stock)
+                product.description   = request.POST.get('description', '')
+                product.save()
 
-        messages.success(request, f'Producto "{product.name}" actualizado.')
-        return redirect('product_list')
+                color_names  = request.POST.getlist('color_nombre[]')
+                color_stocks = request.POST.getlist('color_stock[]')
+                _save_product_colors(product, color_names, color_stocks)
+
+                messages.success(request, f'Producto "{product.name}" actualizado correctamente.')
+                return redirect('product_list')
+            except ValueError as e:
+                messages.error(request, str(e))
 
     color_stocks = list(product.color_stocks.all())
     return render(request, 'inventory/product_form.html', {
-        'product': product, 'categories': categories,
-        'color_stocks': color_stocks, 'active_page': 'inventory',
+        'product': product,
+        'categories': categories,
+        'color_stocks': color_stocks,
+        'active_page': 'inventory',
     })
 
 
@@ -179,7 +212,10 @@ def product_delete(request, pk):
         product.delete()
         messages.success(request, f'Producto "{name}" eliminado.')
         return redirect('product_list')
-    return render(request, 'inventory/product_confirm_delete.html', {'product': product, 'active_page': 'inventory'})
+    return render(request, 'inventory/product_confirm_delete.html', {
+        'product': product,
+        'active_page': 'inventory',
+    })
 
 
 @login_required
@@ -201,31 +237,34 @@ def category_list(request):
 
         elif action == 'edit':
             cat_id = request.POST.get('cat_id')
-            name = request.POST.get('name', '').strip()
-            cat = get_object_or_404(Category, pk=cat_id)
+            name   = request.POST.get('name', '').strip()
+            cat    = get_object_or_404(Category, pk=cat_id)
             if Category.objects.filter(name__iexact=name).exclude(pk=cat_id).exists():
                 messages.error(request, f'Ya existe una categoría llamada "{name}".')
             else:
-                cat.name = name
+                cat.name        = name
                 cat.description = request.POST.get('description', '')
                 cat.save()
-                messages.success(request, f'Categoría actualizada.')
+                messages.success(request, 'Categoría actualizada.')
 
         elif action == 'delete':
             cat_id = request.POST.get('cat_id')
-            cat = get_object_or_404(Category, pk=cat_id)
+            cat    = get_object_or_404(Category, pk=cat_id)
             cat.products.update(category=None)
             cat.delete()
             messages.success(request, 'Categoría eliminada.')
 
         return redirect('category_list')
 
-    return render(request, 'inventory/category_list.html', {'categories': categories, 'active_page': 'inventory'})
+    return render(request, 'inventory/category_list.html', {
+        'categories': categories,
+        'active_page': 'inventory',
+    })
 
 
 @login_required
 def product_color_stock_api(request, pk):
     """Returns color stocks for a product (JSON)."""
     product = get_object_or_404(Product, pk=pk)
-    colors = list(product.color_stocks.values('color', 'stock'))
+    colors  = list(product.color_stocks.values('color', 'stock'))
     return JsonResponse({'colors': colors, 'product_name': product.name})
