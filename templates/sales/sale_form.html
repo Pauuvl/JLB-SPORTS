@@ -128,18 +128,13 @@
       <div class="tarjeta">
         <div class="tarjeta-cab">
           <span class="tarjeta-titulo">📦 Productos</span>
-          <button type="button" class="btn btn-outline btn-sm" onclick="agregarItem()">+ Agregar Producto</button>
         </div>
         <div class="tarjeta-cuerpo">
           {% if not products %}
           <div class="alerta alerta-warning">⚠️ No hay productos en el inventario.</div>
           {% endif %}
           <div id="items-lista"></div>
-          <div class="agregar-btn-wrap" id="btn-agregar-wrap">
-            <button type="button" class="btn btn-outline" onclick="agregarItem()" style="width:100%;border-style:dashed;">
-              ＋ Agregar otro producto
-            </button>
-          </div>
+
         </div>
       </div>
 
