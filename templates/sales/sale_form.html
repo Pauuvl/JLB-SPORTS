@@ -30,7 +30,7 @@
   transition: box-shadow 0.2s;
 }
 .item-card:hover { box-shadow: var(--sombra); }
-.item-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+.item-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; align-items: end; }
 .item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .item-num { background: var(--rojo); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; flex-shrink: 0; }
 .color-selector-wrap {
@@ -68,7 +68,6 @@
 .resumen-subtotal { border-top: 1px solid var(--gris-borde); margin-top: 8px; padding-top: 8px; }
 .resumen-descuento { color: var(--verde); font-weight: 600; }
 .resumen-total-big { font-size: 1.5rem; font-weight: 800; color: var(--rojo); }
-.agregar-btn-wrap { display: flex; justify-content: center; margin: 14px 0; }
 @media(max-width:900px){ .venta-layout{ grid-template-columns:1fr; } .item-grid{ grid-template-columns:1fr 1fr; } }
 </style>
 {% endblock %}
@@ -178,25 +177,21 @@
 
   </div>
 </form>
+{% endblock %}
 
+{% block extra_js %}
 <script>
+/* ================================================================
+   JLB Sports — Formulario de Venta (sobreescribe main.js)
+   ================================================================ */
 window.PRODUCTOS = {{ products_json|safe }};
 
-let itemIndex = 0;
+// Índice propio para este formulario (independiente de main.js)
+let _ventaItemIndex = 0;
 
-function alCambiarCliente() {
-  const sel = document.getElementById('select-cliente');
-  const opt = sel.selectedOptions[0];
-  const descuento = parseFloat(opt.dataset.descuento) || 0;
-  document.getElementById('input-descuento').value = descuento;
-  if (descuento > 0) {
-    document.getElementById('desc-hint').textContent = `Descuento del cliente aplicado`;
-  } else {
-    document.getElementById('desc-hint').textContent = '';
-  }
-  recalcularTodo();
-}
-
+// ------------------------------------------------------------------
+// Utilidades
+// ------------------------------------------------------------------
 function formatoPesos(v) {
   return '$' + Math.round(v).toLocaleString('es-CO').replace(/,/g, '.');
 }
@@ -205,15 +200,46 @@ function getDescuento() {
   return parseFloat(document.getElementById('input-descuento').value) || 0;
 }
 
+// ------------------------------------------------------------------
+// Cliente
+// ------------------------------------------------------------------
+function alCambiarCliente() {
+  const sel = document.getElementById('select-cliente');
+  const opt = sel.selectedOptions[0];
+  const descuento = parseFloat(opt.dataset.descuento) || 0;
+  document.getElementById('input-descuento').value = descuento;
+  document.getElementById('desc-hint').textContent =
+    descuento > 0 ? 'Descuento del cliente aplicado' : '';
+  recalcularTodo();
+}
+
+// ------------------------------------------------------------------
+// Agregar / Eliminar item
+// ------------------------------------------------------------------
 function agregarItem() {
-  if (window.PRODUCTOS.length === 0) { alert('No hay productos en el inventario.'); return; }
+  if (!window.PRODUCTOS || window.PRODUCTOS.length === 0) {
+    alert('No hay productos en el inventario.');
+    return;
+  }
 
   const lista = document.getElementById('items-lista');
-  const idx = itemIndex++;
+  if (!lista) return;
 
+  const idx = _ventaItemIndex++;
+
+  // Construir opciones — usamos atributos data con JSON codificado en base64
+  // para evitar conflictos de comillas en el HTML
   const opts = window.PRODUCTOS.map(p => {
     const stockLabel = p.stock === 0 ? ' ⚠️ AGOTADO' : ` (Stock: ${p.stock})`;
-    return `<option value="${p.id}" data-precio="${p.precio}" data-stock="${p.stock}" data-colores='${JSON.stringify(p.colores)}' data-color-stocks='${JSON.stringify(p.color_stocks || [])}'>${p.nombre}${stockLabel}</option>`;
+    // Codificar listas como JSON en atributos data (comillas dobles escapadas)
+    const coloresJSON   = JSON.stringify(p.colores       || []);
+    const colorStocksJSON = JSON.stringify(p.color_stocks || []);
+    return `<option value="${p.id}"
+      data-precio="${p.precio}"
+      data-stock="${p.stock}"
+      data-colores="${coloresJSON.replace(/"/g, '&quot;')}"
+      data-colorstocks="${colorStocksJSON.replace(/"/g, '&quot;')}"
+    >${p.nombre}${stockLabel}</option>`;
   }).join('');
 
   const div = document.createElement('div');
@@ -225,12 +251,15 @@ function agregarItem() {
         <div class="item-num">${idx + 1}</div>
         <span class="bold" style="font-size:0.85rem;" id="item-name-${idx}">Seleccione un producto</span>
       </div>
-      <button type="button" onclick="eliminarItem(${idx})" style="background:none;border:none;color:var(--gris-texto);cursor:pointer;font-size:1rem;" title="Quitar">✕</button>
+      <button type="button" onclick="eliminarItem(${idx})"
+              style="background:none;border:none;color:var(--gris-texto);cursor:pointer;font-size:1rem;"
+              title="Quitar">✕</button>
     </div>
     <div class="item-grid">
       <div class="form-grupo" style="margin:0;">
         <label>Producto</label>
-        <select name="product_id[]" id="prod-sel-${idx}" onchange="alCambiarProducto(${idx})" required>
+        <select name="product_id[]" id="prod-sel-${idx}"
+                onchange="alCambiarProducto(${idx})" required>
           <option value="">— Seleccionar —</option>
           ${opts}
         </select>
@@ -243,120 +272,164 @@ function agregarItem() {
       </div>
       <div class="form-grupo" style="margin:0;">
         <label>Precio Unit.</label>
-        <input type="text" id="precio-${idx}" readonly value="$0" style="background:var(--gris-fondo);">
+        <input type="text" id="precio-${idx}" readonly value="$0"
+               style="background:var(--gris-fondo);">
       </div>
       <div class="form-grupo" style="margin:0;">
         <label>Subtotal</label>
-        <input type="text" id="subtotal-${idx}" readonly value="$0" style="background:var(--gris-fondo);font-weight:700;color:var(--rojo);">
+        <input type="text" id="subtotal-${idx}" readonly value="$0"
+               style="background:var(--gris-fondo);font-weight:700;color:var(--rojo);">
       </div>
     </div>
+
+    <!-- Selector de color — visible solo si el producto tiene colores -->
     <div class="color-selector-wrap" id="color-wrap-${idx}">
       <div class="form-grupo" style="margin:0;">
         <label>Color</label>
-        <select name="color_vendido[]" id="color-sel-${idx}" onchange="validarColorStock(${idx}); recalcularTodo();">
+        <select name="color_vendido[]" id="color-sel-${idx}"
+                onchange="validarColorStock(${idx}); recalcularTodo();">
           <option value="">— Sin color específico —</option>
         </select>
         <div class="color-stock-info" id="color-stock-info-${idx}"></div>
       </div>
     </div>
   `;
+
   lista.appendChild(div);
   recalcularTodo();
 }
 
+function eliminarItem(idx) {
+  document.getElementById(`item-${idx}`)?.remove();
+  recalcularTodo();
+}
+
+// ------------------------------------------------------------------
+// Cambio de producto → actualizar precio, stock badge y selector color
+// ------------------------------------------------------------------
 function alCambiarProducto(idx) {
   const sel = document.getElementById(`prod-sel-${idx}`);
-  const opt = sel.selectedOptions[0];
+  const opt = sel?.selectedOptions[0];
   if (!opt || !opt.value) return;
 
   const precio = parseFloat(opt.dataset.precio) || 0;
-  const stock = parseInt(opt.dataset.stock) || 0;
-  const colores = JSON.parse(opt.dataset.colores || '[]');
-  const colorStocks = JSON.parse(opt.dataset.colorStocks || '[]');
+  const stock  = parseInt(opt.dataset.stock)    || 0;
 
-  document.getElementById(`item-name-${idx}`).textContent = opt.text.split(' (Stock')[0].split(' ⚠️')[0];
+  // Leer listas desde los atributos data (decodificando &quot; → ")
+  let colores    = [];
+  let colorStocks = [];
+  try {
+    colores     = JSON.parse(opt.getAttribute('data-colores')     || '[]');
+    colorStocks = JSON.parse(opt.getAttribute('data-colorstocks') || '[]');
+  } catch(e) {
+    console.warn('Error parseando colores:', e);
+  }
+
+  // Nombre del producto (sin el stock label)
+  document.getElementById(`item-name-${idx}`).textContent =
+    opt.text.replace(/\s*⚠️ AGOTADO|\s*\(Stock:.*?\)/, '').trim();
+
+  // Precio
   document.getElementById(`precio-${idx}`).value = formatoPesos(precio);
 
-  // Stock badge
+  // Badge de stock general
   let badgeClass = 'stock-ok', badgeText = `Stock: ${stock}`;
-  if (stock === 0) { badgeClass = 'stock-agotado'; badgeText = 'Agotado'; }
-  else if (stock <= 5) { badgeClass = 'stock-bajo'; badgeText = `Stock bajo: ${stock}`; }
-  document.getElementById(`stock-info-${idx}`).innerHTML = `<span class="stock-badge ${badgeClass}">${badgeText}</span>`;
+  if (stock === 0)      { badgeClass = 'stock-agotado'; badgeText = 'Agotado'; }
+  else if (stock <= 5)  { badgeClass = 'stock-bajo';    badgeText = `Stock bajo: ${stock}`; }
+  document.getElementById(`stock-info-${idx}`).innerHTML =
+    `<span class="stock-badge ${badgeClass}">${badgeText}</span>`;
 
-  // Color selector
+  // Selector de color
   const colorWrap = document.getElementById(`color-wrap-${idx}`);
-  const colorSel = document.getElementById(`color-sel-${idx}`);
+  const colorSel  = document.getElementById(`color-sel-${idx}`);
+
   if (colores.length > 0) {
-    colorWrap.style.display = 'block';
+    // Poblar opciones con stock por color
     colorSel.innerHTML = '<option value="">— Sin color específico —</option>';
     colores.forEach(c => {
       const cs = colorStocks.find(x => x.color === c);
-      const stockInfo = cs ? ` (Stock: ${cs.stock})` : '';
-      colorSel.innerHTML += `<option value="${c}" data-color-stock="${cs ? cs.stock : ''}">${c}${stockInfo}</option>`;
+      const stockInfo  = cs ? ` (Stock: ${cs.stock})` : '';
+      const stockAttr  = cs ? cs.stock : '';
+      colorSel.innerHTML +=
+        `<option value="${c}" data-color-stock="${stockAttr}">${c}${stockInfo}</option>`;
     });
+    colorWrap.style.display = 'block';
   } else {
     colorWrap.style.display = 'none';
     colorSel.value = '';
+    document.getElementById(`color-stock-info-${idx}`).innerHTML = '';
   }
 
   validarStock(idx);
   recalcularTodo();
 }
 
+// ------------------------------------------------------------------
+// Validar stock general
+// ------------------------------------------------------------------
 function validarStock(idx) {
   const sel = document.getElementById(`prod-sel-${idx}`);
   const opt = sel?.selectedOptions[0];
   if (!opt || !opt.value) return;
-  const stock = parseInt(opt.dataset.stock) || 0;
+
+  const stock    = parseInt(opt.dataset.stock) || 0;
   const qtyInput = document.getElementById(`qty-${idx}`);
   let qty = parseInt(qtyInput.value) || 1;
-  if (qty > stock && stock > 0) {
-    qtyInput.value = stock;
-    qty = stock;
-  }
-  qtyInput.max = stock;
+  if (stock > 0 && qty > stock) { qtyInput.value = stock; }
+  qtyInput.max = stock || 9999;
 }
 
+// ------------------------------------------------------------------
+// Validar stock por color
+// ------------------------------------------------------------------
 function validarColorStock(idx) {
   const colorSel = document.getElementById(`color-sel-${idx}`);
-  const opt = colorSel?.selectedOptions[0];
+  const opt  = colorSel?.selectedOptions[0];
   const info = document.getElementById(`color-stock-info-${idx}`);
-  if (!opt || !opt.value) { if(info) info.innerHTML = ''; return; }
+  if (!opt || !opt.value) { if (info) info.innerHTML = ''; return; }
+
   const colorStock = opt.dataset.colorStock;
   if (colorStock !== '') {
     const s = parseInt(colorStock);
     let cls = 'stock-ok', txt = `Disponible: ${s}`;
-    if (s === 0) { cls = 'stock-agotado'; txt = 'Agotado en este color'; }
-    else if (s <= 3) { cls = 'stock-bajo'; txt = `Stock bajo: ${s}`; }
+    if (s === 0)     { cls = 'stock-agotado'; txt = 'Agotado en este color'; }
+    else if (s <= 3) { cls = 'stock-bajo';    txt = `Stock bajo: ${s}`; }
     info.innerHTML = `<span class="stock-badge ${cls}">${txt}</span>`;
     const qtyInput = document.getElementById(`qty-${idx}`);
-    if (parseInt(qtyInput.value) > s && s > 0) qtyInput.value = s;
+    if (s > 0 && parseInt(qtyInput.value) > s) qtyInput.value = s;
   }
 }
 
+// ------------------------------------------------------------------
+// Recalcular resumen
+// ------------------------------------------------------------------
 function recalcularTodo() {
   let subtotal = 0, totalItems = 0;
+
   document.querySelectorAll('.item-card').forEach(fila => {
     const idx = fila.id.replace('item-', '');
     const sel = fila.querySelector('select[name="product_id[]"]');
     const opt = sel?.selectedOptions[0];
     if (!opt || !opt.value) return;
+
     const precio = parseFloat(opt.dataset.precio) || 0;
-    const qty = parseInt(document.getElementById(`qty-${idx}`)?.value) || 1;
-    const sub = precio * qty;
-    document.getElementById(`precio-${idx}`).value = formatoPesos(precio);
+    const qty    = parseInt(document.getElementById(`qty-${idx}`)?.value) || 1;
+    const sub    = precio * qty;
+
+    document.getElementById(`precio-${idx}`).value   = formatoPesos(precio);
     document.getElementById(`subtotal-${idx}`).value = formatoPesos(sub);
-    subtotal += sub;
-    totalItems += qty;
+
+    subtotal    += sub;
+    totalItems  += qty;
   });
 
-  const desc = getDescuento();
+  const desc      = getDescuento();
   const descMonto = subtotal * (desc / 100);
-  const total = subtotal - descMonto;
+  const total     = subtotal - descMonto;
 
-  document.getElementById('resumen-items').textContent = totalItems;
+  document.getElementById('resumen-items').textContent    = totalItems;
   document.getElementById('resumen-subtotal').textContent = formatoPesos(subtotal);
-  document.getElementById('resumen-total').textContent = formatoPesos(total);
+  document.getElementById('resumen-total').textContent    = formatoPesos(total);
 
   const descLinea = document.getElementById('resumen-desc-linea');
   if (desc > 0 && subtotal > 0) {
@@ -368,12 +441,15 @@ function recalcularTodo() {
   }
 }
 
-function eliminarItem(idx) {
-  document.getElementById(`item-${idx}`)?.remove();
-  recalcularTodo();
-}
-
-// Add first item on load
-agregarItem();
+// ------------------------------------------------------------------
+// Init — un solo item al cargar, DESPUÉS de que main.js haya corrido
+// ------------------------------------------------------------------
+(function init() {
+  // Limpiar cualquier item que main.js haya podido insertar
+  const lista = document.getElementById('items-lista');
+  if (lista) lista.innerHTML = '';
+  _ventaItemIndex = 0;
+  agregarItem();
+})();
 </script>
 {% endblock %}
